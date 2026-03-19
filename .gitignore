@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# Build output & dependencies
+node_modules/
+dist/
+
 # IDE
 .vscode/
 .idea/
