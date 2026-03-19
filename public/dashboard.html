@@ -648,7 +648,9 @@
 <div id="toast"></div>
 
 <script>
-  const API = 'http://localhost:8000/api/v1';
+  const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? `${window.location.protocol}//${window.location.hostname}:8000/api/v1`
+    : `${window.location.protocol}//${window.location.hostname}/api/v1`;
   let token = localStorage.getItem('wrtc_token') || '';
   let currentEmbed = null; // { html, room_name, name }
 
