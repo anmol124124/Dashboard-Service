@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebRTC Platform — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3348;
+      --primary:   #6c63ff;
+      --primary-h: #5a52e0;
+      --danger:    #e53e3e;
+      --danger-h:  #c53030;
+      --text:      #e2e8f0;
+      --muted:     #718096;
+      --green:     #38a169;
+      --radius:    12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Auth ──────────────────────────────────────────────────────────── */
+    #auth-view {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .auth-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .auth-logo svg { color: var(--primary); }
+
+    .auth-logo span {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all .2s;
+    }
+
+    .auth-tab.active { color: var(--primary); border-color: var(--primary); }
+
+    .form-group { margin-bottom: 16px; }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .form-group input:focus { border-color: var(--primary); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background .2s, opacity .2s;
+    }
+
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-h); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled) { background: var(--danger-h); }
+    .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover:not(:disabled) { background: var(--border); }
+    .btn-full { width: 100%; }
+    .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+    .auth-error {
+      background: #2d1515;
+      border: 1px solid #7b2020;
+      color: #fc8181;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    /* ── Dashboard ─────────────────────────────────────────────────────── */
+    #dashboard-view { display: none; min-height: 100vh; }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .topbar-logo svg { color: var(--primary); }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .content { padding: 32px 28px; max-width: 1100px; margin: 0 auto; }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header p { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Projects grid ─────────────────────────────────────────────────── */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      transition: border-color .2s;
+    }
+
+    .project-card:hover { border-color: var(--primary); }
+
+    .project-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .project-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), #a78bfa);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .project-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .project-room {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      font-family: monospace;
+      margin-bottom: 16px;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .project-date {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .project-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state svg { margin-bottom: 16px; opacity: .4; }
+    .empty-state h3 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+    .empty-state p { font-size: 14px; }
+
+    /* ── Modals ────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.6);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 520px;
+      animation: modal-in .2s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(.96) translateY(-8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-head {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-head h2 { font-size: 16px; font-weight: 600; }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 20px;
+      line-height: 1;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .modal-close:hover { background: var(--surface2); color: var(--text); }
+
+    .modal-body { padding: 24px; }
+
+    .modal-foot {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* ── Embed modal ───────────────────────────────────────────────────── */
+    .embed-modal { max-width: 680px; }
+
+    .code-block {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: #a8c0d6;
+      max-height: 320px;
+      overflow-y: auto;
+      white-space: pre;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .copy-success {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .copy-success.show { opacity: 1; }
+
+    /* ── Toast ─────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Spinner ───────────────────────────────────────────────────────── */
+    .spin {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Domains modal ─────────────────────────────────────────────────── */
+    .domain-list { margin-bottom: 16px; min-height: 40px; }
+
+    .domain-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-family: monospace;
+    }
+
+    .domain-item-host { color: var(--text); word-break: break-all; }
+
+    .domain-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 16px 0;
+    }
+
+    .domain-add-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .domain-add-row input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .domain-add-row input:focus { border-color: var(--primary); }
+
+    .domain-hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Auth View ──────────────────────────────────────────────────────────── -->
+<div id="auth-view">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      <span>WebRTC Platform</span>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</div>
+      <div class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+
+    <div id="auth-error" class="auth-error"></div>
+
+    <!-- Login form -->
+    <div id="form-login">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()" id="btn-login">
+        <span class="spin" id="spin-login"></span>
+        Sign In
+      </button>
+    </div>
+
+    <!-- Signup form -->
+    <div id="form-signup" style="display:none">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password <span style="color:var(--muted);font-size:11px">(min 8 characters)</span></label>
+        <input type="password" id="signup-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doSignup()" id="btn-signup">
+        <span class="spin" id="spin-signup"></span>
+        Create Account
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Dashboard View ─────────────────────────────────────────────────────── -->
+<div id="dashboard-view">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+      </svg>
+      WebRTC Platform
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <span id="user-email"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <h1>My Projects</h1>
+        <p>Each project generates a self-contained embed code with its own room and token.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Project
+      </button>
+    </div>
+
+    <div class="projects-grid" id="projects-grid">
+      <!-- cards injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- ── Create Project Modal ───────────────────────────────────────────────── -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>New Project</h2>
+      <button class="modal-close" onclick="closeCreateModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="create-error" class="auth-error"></div>
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" id="project-name" placeholder="e.g. Customer Support Room" maxlength="255" />
+      </div>
+      <div class="form-group">
+        <label>Allowed Domain</label>
+        <input type="text" id="project-domain" placeholder="e.g. https://www.xyz.com" maxlength="255"
+               onkeydown="if(event.key==='Enter')doCreate()" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="doCreate()" id="btn-create">
+        <span class="spin" id="spin-create"></span>
+        Create Project
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Embed Code Modal ───────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="embed-modal">
+  <div class="modal embed-modal">
+    <div class="modal-head">
+      <h2 id="embed-title">Embed Code</h2>
+      <button class="modal-close" onclick="closeEmbedModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+        Copy this HTML and deploy it anywhere. The meeting will auto-initialize with the pre-embedded token.
+      </p>
+      <div class="code-block" id="embed-code"></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="copy-success" id="copy-success">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Copied!
+        </span>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeEmbedModal()">Close</button>
+      <button class="btn btn-ghost" onclick="doCopy()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+        </svg>
+        Copy Code
+      </button>
+      <button class="btn btn-primary" onclick="doDownload()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download HTML
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Domains Modal ──────────────────────────────────────────────────────── -->
+<div class="modal-overlay" id="domains-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="domains-title">Allowed Domains</h2>
+      <button class="modal-close" onclick="closeDomainsModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+        Only these domains may host your embed HTML. If the list is empty, all domains are allowed.
+      </p>
+      <div class="domain-list" id="domain-list">
+        <div class="domain-empty">Loading…</div>
+      </div>
+      <div class="domain-add-row">
+        <input type="text" id="new-domain" placeholder="https://www.example.com" maxlength="255"
+               onkeydown="if(event.key==='Enter')doAddDomain()" />
+        <button class="btn btn-primary btn-sm" onclick="doAddDomain()" id="btn-add-domain">Add</button>
+      </div>
+      <p class="domain-hint">Enter full URL or hostname, e.g. <code style="color:var(--text)">https://www.example.com</code></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeDomainsModal()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ──────────────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<script>
+  const API = 'http://localhost:8000/api/v1';
+  let token = localStorage.getItem('wrtc_token') || '';
+  let currentEmbed = null; // { html, room_name, name }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  (async () => {
+    if (token) {
+      try {
+        const me = await apiFetch('/auth/me');
+        showDashboard(me.email);
+        loadProjects();
+      } catch {
+        token = '';
+        localStorage.removeItem('wrtc_token');
+      }
+    }
+  })();
+
+  // ── API helper ────────────────────────────────────────────────────────────
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(API + path, {
+      ...opts,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(opts.headers || {}),
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Request failed' }));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  }
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+    document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+    document.getElementById('form-login').style.display  = tab === 'login'  ? '' : 'none';
+    document.getElementById('form-signup').style.display = tab === 'signup' ? '' : 'none';
+    document.getElementById('auth-error').style.display  = 'none';
+  }
+
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) return showAuthError('Please fill in all fields.');
+    setLoading('login', true);
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      token = data.access_token;
+      localStorage.setItem('wrtc_token', token);
+      const me = await apiFetch('/auth/me');
+      showDashboard(me.email);
+      loadProjects();
+    } catch (e) {
+      showAuthError(e.message);
+    } finally {
+      setLoading('login', false);
+    }
+  }
+
+  async function doSignup() {
+    const email    = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    if (!email || !password) return showAuthError('Please fill in all fields.');
+    setLoading('signup', true);
+    try {
+      await apiFetch('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      toast('Account created! Please sign in.');
+      switchTab('login');
+      document.getElementById('login-email').value = email;
+    } catch (e) {
+      showAuthError(e.message);
+    } finally {
+      setLoading('signup', false);
+    }
+  }
+
+  function doLogout() {
+    token = '';
+    localStorage.removeItem('wrtc_token');
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('auth-view').style.display      = 'flex';
+    document.getElementById('login-password').value = '';
+  }
+
+  function showAuthError(msg) {
+    const el = document.getElementById('auth-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function setLoading(which, on) {
+    document.getElementById(`spin-${which}`).style.display = on ? 'inline-block' : 'none';
+    document.getElementById(`btn-${which}`).disabled = on;
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  function showDashboard(email) {
+    document.getElementById('auth-view').style.display      = 'none';
+    document.getElementById('dashboard-view').style.display = 'block';
+    document.getElementById('user-email').textContent = email;
+    document.getElementById('user-avatar').textContent = email[0].toUpperCase();
+  }
+
+  async function loadProjects() {
+    try {
+      const projects = await apiFetch('/projects');
+      renderProjects(projects);
+    } catch (e) {
+      toast('Failed to load projects: ' + e.message);
+    }
+  }
+
+  function renderProjects(projects) {
+    const grid = document.getElementById('projects-grid');
+    if (!projects.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <h3>No projects yet</h3>
+          <p>Click "New Project" to create your first embeddable meeting room.</p>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = projects.map(p => `
+      <div class="project-card" id="card-${p.id}">
+        <div class="project-card-header">
+          <div class="project-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
+            </svg>
+          </div>
+        </div>
+        <div class="project-name">${escHtml(p.name)}</div>
+        <div class="project-room" title="${escHtml(p.room_name)}">${escHtml(p.room_name)}</div>
+        <div class="project-date">Created ${formatDate(p.created_at)}</div>
+        <div class="project-actions">
+          <button class="btn btn-primary btn-sm" onclick="openEmbedModal('${p.id}','${escHtml(p.name)}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </svg>
+            Embed Code
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="openDomainsModal('${p.id}','${escHtml(p.name)}')" title="Allowed Domains">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="confirmDelete('${p.id}','${escHtml(p.name)}')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Create project ────────────────────────────────────────────────────────
+  function openCreateModal() {
+    document.getElementById('project-name').value = '';
+    document.getElementById('project-domain').value = '';
+    document.getElementById('create-error').style.display = 'none';
+    document.getElementById('create-modal').classList.add('open');
+    setTimeout(() => document.getElementById('project-name').focus(), 100);
+  }
+
+  function closeCreateModal() {
+    document.getElementById('create-modal').classList.remove('open');
+  }
+
+  async function doCreate() {
+    const name   = document.getElementById('project-name').value.trim();
+    const domain = document.getElementById('project-domain').value.trim().toLowerCase();
+    const el = document.getElementById('create-error');
+    if (!name || !domain) {
+      el.textContent = 'Project name and domain are required.';
+      el.style.display = 'block';
+      return;
+    }
+    setLoading('create', true);
+    try {
+      await apiFetch('/projects', { method: 'POST', body: JSON.stringify({ name, domain }) });
+      closeCreateModal();
+      toast('Project created!');
+      loadProjects();
+    } catch (e) {
+      const el = document.getElementById('create-error');
+      el.textContent = e.message;
+      el.style.display = 'block';
+    } finally {
+      setLoading('create', false);
+    }
+  }
+
+  // ── Embed modal ───────────────────────────────────────────────────────────
+  async function openEmbedModal(projectId, projectName) {
+    document.getElementById('embed-title').textContent = `Embed Code — ${projectName}`;
+    document.getElementById('embed-code').textContent  = 'Loading…';
+    document.getElementById('embed-modal').classList.add('open');
+    try {
+      const data = await apiFetch(`/projects/${projectId}/embed`);
+      currentEmbed = { html: data.html, room_name: data.room_name, name: projectName };
+      document.getElementById('embed-code').textContent = data.html;
+    } catch (e) {
+      document.getElementById('embed-code').textContent = 'Error: ' + e.message;
+    }
+  }
+
+  function closeEmbedModal() {
+    document.getElementById('embed-modal').classList.remove('open');
+    currentEmbed = null;
+  }
+
+  function doCopy() {
+    if (!currentEmbed) return;
+    navigator.clipboard.writeText(currentEmbed.html).then(() => {
+      const el = document.getElementById('copy-success');
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 2000);
+      toast('Copied to clipboard!');
+    });
+  }
+
+  function doDownload() {
+    if (!currentEmbed) return;
+    const blob = new Blob([currentEmbed.html], { type: 'text/html' });
+    const url  = URL.createObjectURL(blob);
+    Object.assign(document.createElement('a'), {
+      href:     url,
+      download: `${currentEmbed.room_name}.html`,
+    }).click();
+    URL.revokeObjectURL(url);
+    toast('Downloaded!');
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function confirmDelete(projectId, projectName) {
+    if (!confirm(`Delete "${projectName}"? This cannot be undone.`)) return;
+    try {
+      await apiFetch(`/projects/${projectId}`, { method: 'DELETE' });
+      document.getElementById(`card-${projectId}`)?.remove();
+      toast('Project deleted.');
+      // refresh to show empty state if needed
+      loadProjects();
+    } catch (e) {
+      toast('Delete failed: ' + e.message);
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatDate(iso) {
+    return new Date(iso).toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+  }
+
+  // ── Domains modal ─────────────────────────────────────────────────────────
+  let currentDomainsProjectId = null;
+
+  async function openDomainsModal(projectId, projectName) {
+    currentDomainsProjectId = projectId;
+    document.getElementById('domains-title').textContent = `Allowed Domains — ${projectName}`;
+    document.getElementById('new-domain').value = '';
+    document.getElementById('domains-modal').classList.add('open');
+    await loadDomains();
+    setTimeout(() => document.getElementById('new-domain').focus(), 100);
+  }
+
+  function closeDomainsModal() {
+    document.getElementById('domains-modal').classList.remove('open');
+    currentDomainsProjectId = null;
+  }
+
+  async function loadDomains() {
+    const list = document.getElementById('domain-list');
+    list.innerHTML = '<div class="domain-empty">Loading…</div>';
+    try {
+      const domains = await apiFetch(`/projects/${currentDomainsProjectId}/domains`);
+      renderDomains(domains);
+    } catch (e) {
+      list.innerHTML = `<div class="domain-empty">Error: ${escHtml(e.message)}</div>`;
+    }
+  }
+
+  function renderDomains(domains) {
+    const list = document.getElementById('domain-list');
+    if (!domains.length) {
+      list.innerHTML = '<div class="domain-empty">No domains added — all origins are allowed.</div>';
+      return;
+    }
+    list.innerHTML = domains.map(d => `
+      <div class="domain-item" id="domain-item-${d.id}">
+        <span class="domain-item-host">${escHtml(d.domain)}</span>
+        <button class="btn btn-danger btn-sm" onclick="doDeleteDomain('${d.id}')">Remove</button>
+      </div>`).join('');
+  }
+
+  async function doAddDomain() {
+    const domain = document.getElementById('new-domain').value.trim().toLowerCase();
+    if (!domain) return;
+    document.getElementById('btn-add-domain').disabled = true;
+    try {
+      await apiFetch(`/projects/${currentDomainsProjectId}/domains`, {
+        method: 'POST',
+        body: JSON.stringify({ domain }),
+      });
+      document.getElementById('new-domain').value = '';
+      await loadDomains();
+      toast('Domain added.');
+    } catch (e) {
+      toast('Error: ' + e.message);
+    } finally {
+      document.getElementById('btn-add-domain').disabled = false;
+    }
+  }
+
+  async function doDeleteDomain(domainId) {
+    try {
+      await apiFetch(`/projects/${currentDomainsProjectId}/domains/${domainId}`, { method: 'DELETE' });
+      document.getElementById(`domain-item-${domainId}`)?.remove();
+      // If list is now empty, re-render to show the empty state message
+      const list = document.getElementById('domain-list');
+      if (!list.querySelector('.domain-item')) {
+        list.innerHTML = '<div class="domain-empty">No domains added — all origins are allowed.</div>';
+      }
+      toast('Domain removed.');
+    } catch (e) {
+      toast('Error: ' + e.message);
+    }
+  }
+
+  // Close modals on overlay click
+  document.getElementById('create-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeCreateModal();
+  });
+  document.getElementById('embed-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeEmbedModal();
+  });
+  document.getElementById('domains-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeDomainsModal();
+  });
+</script>
+</body>
+</html>
