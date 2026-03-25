@@ -23,3 +23,14 @@ export async function apiFetch(path, opts = {}, token = '') {
   if (res.status === 204) return null
   return res.json()
 }
+
+export async function createCheckoutSession(plan, token) {
+  return apiFetch('/payments/create-checkout-session', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  }, token)
+}
+
+export async function verifySession(sessionId, token) {
+  return apiFetch(`/payments/verify-session?session_id=${encodeURIComponent(sessionId)}`, {}, token)
+}

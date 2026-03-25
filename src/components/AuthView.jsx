@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { apiFetch } from '../api.js'
+import { apiFetch, createCheckoutSession } from '../api.js'
 
-export default function AuthView({ onLogin }) {
-  const [tab, setTab] = useState('login')
+export default function AuthView({ onLogin, selectedPlan }) {
+  const [tab, setTab] = useState(selectedPlan ? 'signup' : 'login')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -21,7 +21,7 @@ export default function AuthView({ onLogin }) {
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       })
       const me = await apiFetch('/auth/me', {}, data.access_token)
-      onLogin(data.access_token, me.email)
+      onLogin(data.access_token, me.email, me.plan)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -33,13 +33,29 @@ export default function AuthView({ onLogin }) {
     if (!signupEmail || !signupPassword) return setError('Please fill in all fields.')
     setLoading(true); setError('')
     try {
+      // 1. Create account
       await apiFetch('/auth/signup', {
         method: 'POST',
         body: JSON.stringify({ email: signupEmail, password: signupPassword }),
       })
-      setTab('login')
-      setLoginEmail(signupEmail)
-      setError('')
+
+      // 2. Auto-login to get token
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: signupEmail, password: signupPassword }),
+      })
+      const token = data.access_token
+
+      // 3. If a plan was selected, redirect to Stripe Checkout
+      if (selectedPlan) {
+        const { checkout_url } = await createCheckoutSession(selectedPlan, token)
+        localStorage.setItem('wrtc_token', token)
+        window.location.href = checkout_url
+        return
+      }
+
+      const me = await apiFetch('/auth/me', {}, token)
+      onLogin(token, me.email, me.plan)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -56,6 +72,12 @@ export default function AuthView({ onLogin }) {
           </svg>
           <span>WebRTC Platform</span>
         </div>
+
+        {selectedPlan && (
+          <div className="plan-hint">
+            Selected plan: <strong style={{ textTransform: 'capitalize' }}>{selectedPlan}</strong>
+          </div>
+        )}
 
         <div className="auth-tabs">
           <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError('') }}>
@@ -101,7 +123,7 @@ export default function AuthView({ onLogin }) {
             </div>
             <button className="btn btn-primary btn-full" onClick={doSignup} disabled={loading}>
               {loading && <span className="spin" />}
-              Create Account
+              {selectedPlan ? 'Create Account & Pay' : 'Create Account'}
             </button>
           </>
         )}
