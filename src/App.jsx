@@ -47,7 +47,7 @@ export default function App() {
         .then(me => {
           setToken(storedToken)
           setUser(me)
-          setView(me.plan ? 'dashboard' : 'pricing')
+          setView('dashboard')
         })
         .catch(() => {
           localStorage.removeItem('wrtc_token')
@@ -67,7 +67,7 @@ export default function App() {
     localStorage.setItem('wrtc_token', accessToken)
     setToken(accessToken)
     setUser({ email, plan })
-    setView(plan ? 'dashboard' : 'pricing')
+    setView('dashboard')
   }
 
   function handleLogout() {
