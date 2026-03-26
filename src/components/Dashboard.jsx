@@ -92,7 +92,13 @@ export default function Dashboard({ user, token, onLogout }) {
                   <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
                 </svg>
                 <h3>No projects yet</h3>
-                <p>Click "New Project" to create your first embeddable meeting room.</p>
+                <p>Create your first embeddable meeting room to get started.</p>
+                <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => setCreateOpen(true)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  Create your first project
+                </button>
               </div>
             ) : projects.map(p => (
               <ProjectCard

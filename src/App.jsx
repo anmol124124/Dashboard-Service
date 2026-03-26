@@ -17,16 +17,26 @@ export default function App() {
 
     // Returning from Stripe — verify payment
     if (sessionId && storedToken) {
+      window.history.replaceState({}, '', window.location.pathname)
       verifySession(sessionId, storedToken)
         .then(({ plan, email }) => {
-          window.history.replaceState({}, '', window.location.pathname)
           setToken(storedToken)
           setUser({ email, plan })
           setView('dashboard')
         })
         .catch(() => {
-          window.history.replaceState({}, '', window.location.pathname)
-          setView('pricing')
+          // Verification failed (e.g. Stripe keys not set on server).
+          // Still load the user so they can access the dashboard.
+          apiFetch('/auth/me', {}, storedToken)
+            .then(me => {
+              setToken(storedToken)
+              setUser(me)
+              setView('dashboard')
+            })
+            .catch(() => {
+              localStorage.removeItem('wrtc_token')
+              setView('pricing')
+            })
         })
       return
     }
