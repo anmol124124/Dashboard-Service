@@ -31,10 +31,10 @@ export default function Dashboard({ user, token, onLogout }) {
   useEffect(() => { loadProjects() }, [loadProjects])
 
   async function openEmbedModal(id, name) {
-    setEmbedProject({ id, name, html: null, guest_html: null, room_name: null })
+    setEmbedProject({ id, name, html: null, room_name: null })
     try {
       const data = await apiFetch(`/projects/${id}/embed`, {}, token)
-      setEmbedProject({ id, name, html: data.html, guest_html: data.guest_html, room_name: data.room_name })
+      setEmbedProject({ id, name, html: data.html, room_name: data.room_name })
     } catch (e) {
       showToast('Error: ' + e.message)
       setEmbedProject(null)
