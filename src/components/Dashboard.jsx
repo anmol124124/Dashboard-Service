@@ -4,15 +4,12 @@ import ProjectCard from './ProjectCard.jsx'
 import CreateModal from './CreateModal.jsx'
 import EmbedModal from './EmbedModal.jsx'
 import DomainsModal from './DomainsModal.jsx'
-import MeetingView from './MeetingView.jsx'
-
 export default function Dashboard({ user, token, onLogout }) {
   const [projects, setProjects] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
   const [embedProject, setEmbedProject] = useState(null)   // { id, name, html, room_name }
   const [domainsProject, setDomainsProject] = useState(null) // { id, name }
-  const [hostMeeting, setHostMeeting] = useState(null)      // { name, room_name, host_token }
-  const [toast, setToast] = useState({ msg: '', show: false })
+const [toast, setToast] = useState({ msg: '', show: false })
   const toastTimer = useRef(null)
 
   const showToast = useCallback((msg) => {
@@ -31,15 +28,6 @@ export default function Dashboard({ user, token, onLogout }) {
   }, [token, showToast])
 
   useEffect(() => { loadProjects() }, [loadProjects])
-
-  async function openHostMeeting(id, name) {
-    try {
-      const data = await apiFetch(`/projects/${id}/embed`, {}, token)
-      setHostMeeting({ name, room_name: data.room_name, host_token: data.host_token })
-    } catch (e) {
-      showToast('Error: ' + e.message)
-    }
-  }
 
   async function openEmbedModal(id, name) {
     setEmbedProject({ id, name, html: null, room_name: null })
@@ -115,8 +103,7 @@ export default function Dashboard({ user, token, onLogout }) {
               <ProjectCard
                 key={p.id}
                 project={p}
-                onJoinHost={() => openHostMeeting(p.id, p.name)}
-                onEmbed={() => openEmbedModal(p.id, p.name)}
+onEmbed={() => openEmbedModal(p.id, p.name)}
                 onDomains={() => setDomainsProject({ id: p.id, name: p.name })}
                 onDelete={() => deleteProject(p.id, p.name)}
               />
@@ -152,12 +139,6 @@ export default function Dashboard({ user, token, onLogout }) {
 
       <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
 
-      {hostMeeting && (
-        <MeetingView
-          project={hostMeeting}
-          onClose={() => setHostMeeting(null)}
-        />
-      )}
     </>
   )
 }
