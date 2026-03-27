@@ -5,6 +5,7 @@ export default function AnalyticsModal({ project, token, onClose }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedMeeting, setSelectedMeeting] = useState(null)
 
   useEffect(() => {
     apiFetch(`/projects/${project.id}/analytics`, {}, token)
@@ -17,7 +18,20 @@ export default function AnalyticsModal({ project, token, onClose }) {
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal" style={{ maxWidth: '700px', width: '95%' }}>
         <div className="modal-header">
-          <h2 className="modal-title">Analytics — {project.name}</h2>
+          <h2 className="modal-title">
+            {selectedMeeting ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button onClick={() => setSelectedMeeting(null)} style={styles.backBtn} title="Back">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                {selectedMeeting.title}
+              </span>
+            ) : (
+              `Analytics — ${project.name}`
+            )}
+          </h2>
           <button className="modal-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -28,17 +42,30 @@ export default function AnalyticsModal({ project, token, onClose }) {
         <div className="modal-body">
           {loading && <p style={{ color: '#9aa0a6', textAlign: 'center', padding: '32px 0' }}>Loading…</p>}
           {error && <p style={{ color: '#ea4335', textAlign: 'center' }}>{error}</p>}
-          {data && <AnalyticsContent data={data} />}
+          {data && !selectedMeeting && (
+            <AnalyticsContent
+              data={data}
+              projectId={project.id}
+              token={token}
+              onSelectMeeting={setSelectedMeeting}
+            />
+          )}
+          {selectedMeeting && (
+            <MeetingDetail
+              meeting={selectedMeeting}
+              projectId={project.id}
+              token={token}
+            />
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-function AnalyticsContent({ data }) {
+function AnalyticsContent({ data, projectId, token, onSelectMeeting }) {
   const { total, meetings } = data
 
-  // Build meetings-per-day for last 14 days
   const today = new Date()
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today)
@@ -59,7 +86,6 @@ function AnalyticsContent({ data }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      {/* Stat card */}
       <div style={styles.statRow}>
         <div style={styles.statCard}>
           <div style={styles.statValue}>{total}</div>
@@ -74,14 +100,11 @@ function AnalyticsContent({ data }) {
           <div style={styles.statLabel}>Last Meeting</div>
         </div>
         <div style={styles.statCard}>
-          <div style={styles.statValue}>
-            {counts.reduce((a, b) => a + b, 0)}
-          </div>
+          <div style={styles.statValue}>{counts.reduce((a, b) => a + b, 0)}</div>
           <div style={styles.statLabel}>Last 14 Days</div>
         </div>
       </div>
 
-      {/* Bar chart */}
       <div style={styles.chartBox}>
         <div style={styles.chartTitle}>Meetings per Day (last 14 days)</div>
         <div style={styles.chart}>
@@ -98,7 +121,6 @@ function AnalyticsContent({ data }) {
         </div>
       </div>
 
-      {/* Meetings list */}
       <div>
         <div style={styles.sectionTitle}>All Meetings</div>
         {meetings.length === 0 ? (
@@ -114,16 +136,156 @@ function AnalyticsContent({ data }) {
             </thead>
             <tbody>
               {meetings.map(m => (
-                <tr key={m.id} style={styles.tr}>
-                  <td style={styles.td}>{m.title}</td>
-                  <td style={{ ...styles.td, color: '#9aa0a6', whiteSpace: 'nowrap' }}>
-                    {new Date(m.created_at).toLocaleString(undefined, {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit',
-                    })}
+                <MeetingRow
+                  key={m.id}
+                  meeting={m}
+                  projectId={projectId}
+                  token={token}
+                  onSelect={onSelectMeeting}
+                />
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function MeetingRow({ meeting, projectId, token, onSelect }) {
+  const [hovered, setHovered] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleClick = async () => {
+    setLoading(true)
+    try {
+      const detail = await apiFetch(`/projects/${projectId}/meetings/${meeting.id}`, {}, token)
+      onSelect(detail)
+    } catch (e) {
+      console.error('Failed to load meeting detail', e)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <tr
+      style={{ ...styles.tr, background: hovered ? 'rgba(255,255,255,.04)' : 'transparent', cursor: 'pointer' }}
+      onClick={handleClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <td style={styles.td}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {loading
+            ? <span style={{ fontSize: 12, color: '#9aa0a6' }}>Loading…</span>
+            : meeting.title
+          }
+          {!loading && (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="2" style={{ opacity: hovered ? 1 : 0, transition: 'opacity .15s' }}>
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          )}
+        </span>
+      </td>
+      <td style={{ ...styles.td, color: '#9aa0a6', whiteSpace: 'nowrap' }}>
+        {new Date(meeting.created_at).toLocaleString(undefined, {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        })}
+      </td>
+      <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 12, color: '#5f6368' }}>
+        {meeting.room_name}
+      </td>
+    </tr>
+  )
+}
+
+function MeetingDetail({ meeting }) {
+  const fmtTime = iso => iso
+    ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : '—'
+
+  const fmtDuration = secs => {
+    if (secs == null) return 'Ongoing'
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
+    const s = secs % 60
+    if (h > 0) return `${h}h ${m}m`
+    if (m > 0) return `${m}m ${s}s`
+    return `${s}s`
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      {/* Summary cards */}
+      <div style={styles.statRow}>
+        <div style={styles.statCard}>
+          <div style={{ ...styles.statValue, fontSize: 18, wordBreak: 'break-all' }}>{meeting.admin.email}</div>
+          <div style={styles.statLabel}>Host</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statValue}>{fmtDuration(meeting.duration_seconds)}</div>
+          <div style={styles.statLabel}>Duration</div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statValue}>{meeting.participants.length}</div>
+          <div style={styles.statLabel}>Participants</div>
+        </div>
+      </div>
+
+      {/* Time row */}
+      <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ ...styles.statCard, flex: 1, textAlign: 'left', padding: '14px 16px' }}>
+          <div style={{ fontSize: 11, color: '#9aa0a6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Started</div>
+          <div style={{ fontSize: 14, color: '#e8eaed' }}>{fmtTime(meeting.created_at)}</div>
+        </div>
+        <div style={{ ...styles.statCard, flex: 1, textAlign: 'left', padding: '14px 16px' }}>
+          <div style={{ fontSize: 11, color: '#9aa0a6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Ended</div>
+          <div style={{ fontSize: 14, color: meeting.ended_at ? '#e8eaed' : '#fbbc04' }}>
+            {meeting.ended_at ? fmtTime(meeting.ended_at) : 'Ongoing'}
+          </div>
+        </div>
+      </div>
+
+      {/* Participants table */}
+      <div>
+        <div style={styles.sectionTitle}>Participants</div>
+        {meeting.participants.length === 0 ? (
+          <p style={{ color: '#9aa0a6', fontSize: 14 }}>No participant data recorded yet.</p>
+        ) : (
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Name</th>
+                <th style={styles.th}>Role</th>
+                <th style={styles.th}>Joined</th>
+                <th style={styles.th}>Left</th>
+              </tr>
+            </thead>
+            <tbody>
+              {meeting.participants.map((p, i) => (
+                <tr key={i} style={styles.tr}>
+                  <td style={styles.td}>{p.display_name}</td>
+                  <td style={styles.td}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      background: p.role === 'host' ? 'rgba(26,115,232,.2)' : 'rgba(255,255,255,.07)',
+                      color: p.role === 'host' ? '#4d94ff' : '#9aa0a6',
+                    }}>
+                      {p.role}
+                    </span>
                   </td>
-                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 12, color: '#5f6368' }}>
-                    {m.room_name}
+                  <td style={{ ...styles.td, color: '#9aa0a6', whiteSpace: 'nowrap' }}>{fmtTime(p.joined_at)}</td>
+                  <td style={{ ...styles.td, color: p.left_at ? '#9aa0a6' : '#fbbc04', whiteSpace: 'nowrap' }}>
+                    {p.left_at ? fmtTime(p.left_at) : 'Active'}
                   </td>
                 </tr>
               ))}
@@ -136,6 +298,10 @@ function AnalyticsContent({ data }) {
 }
 
 const styles = {
+  backBtn: {
+    background: 'none', border: 'none', cursor: 'pointer', color: '#9aa0a6',
+    padding: '2px 4px', display: 'flex', alignItems: 'center', borderRadius: 4,
+  },
   statRow: { display: 'flex', gap: 16 },
   statCard: {
     flex: 1, background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.08)',
