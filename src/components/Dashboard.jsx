@@ -4,11 +4,13 @@ import ProjectCard from './ProjectCard.jsx'
 import CreateModal from './CreateModal.jsx'
 import EmbedModal from './EmbedModal.jsx'
 import DomainsModal from './DomainsModal.jsx'
+import AnalyticsModal from './AnalyticsModal.jsx'
 export default function Dashboard({ user, token, onLogout }) {
   const [projects, setProjects] = useState([])
   const [createOpen, setCreateOpen] = useState(false)
-  const [embedProject, setEmbedProject] = useState(null)   // { id, name, html, room_name }
-  const [domainsProject, setDomainsProject] = useState(null) // { id, name }
+  const [embedProject, setEmbedProject] = useState(null)
+  const [domainsProject, setDomainsProject] = useState(null)
+  const [analyticsProject, setAnalyticsProject] = useState(null)
 const [toast, setToast] = useState({ msg: '', show: false })
   const toastTimer = useRef(null)
 
@@ -103,7 +105,8 @@ const [toast, setToast] = useState({ msg: '', show: false })
               <ProjectCard
                 key={p.id}
                 project={p}
-onEmbed={() => openEmbedModal(p.id, p.name)}
+                onAnalytics={() => setAnalyticsProject({ id: p.id, name: p.name })}
+                onEmbed={() => openEmbedModal(p.id, p.name)}
                 onDomains={() => setDomainsProject({ id: p.id, name: p.name })}
                 onDelete={() => deleteProject(p.id, p.name)}
               />
@@ -137,8 +140,15 @@ onEmbed={() => openEmbedModal(p.id, p.name)}
         />
       )}
 
-      <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
+      {analyticsProject && (
+        <AnalyticsModal
+          project={analyticsProject}
+          token={token}
+          onClose={() => setAnalyticsProject(null)}
+        />
+      )}
 
+      <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
     </>
   )
 }
