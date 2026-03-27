@@ -63,6 +63,35 @@ export default function AnalyticsModal({ project, token, onClose }) {
   )
 }
 
+function fmtDuration(secs) {
+  if (secs == null) return '—'
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${s}s`
+  return `${s}s`
+}
+
+function downloadCSV(meetings) {
+  const header = ['Title', 'Date & Time', 'Duration', 'Participants', 'Room']
+  const rows = meetings.map(m => [
+    `"${m.title.replace(/"/g, '""')}"`,
+    `"${new Date(m.created_at).toLocaleString()}"`,
+    fmtDuration(m.duration_seconds),
+    m.participant_count,
+    m.room_name,
+  ])
+  const csv = [header, ...rows].map(r => r.join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `meetings-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function AnalyticsContent({ data, projectId, token, onSelectMeeting }) {
   const { total, meetings } = data
 
@@ -122,7 +151,17 @@ function AnalyticsContent({ data, projectId, token, onSelectMeeting }) {
       </div>
 
       <div>
-        <div style={styles.sectionTitle}>All Meetings</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={styles.sectionTitle}>All Meetings</div>
+          {meetings.length > 0 && (
+            <button onClick={() => downloadCSV(meetings)} style={styles.csvBtn}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: 5 }}>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download CSV
+            </button>
+          )}
+        </div>
         {meetings.length === 0 ? (
           <p style={{ color: '#9aa0a6', fontSize: 14 }}>No meetings yet.</p>
         ) : (
@@ -131,7 +170,8 @@ function AnalyticsContent({ data, projectId, token, onSelectMeeting }) {
               <tr>
                 <th style={styles.th}>Title</th>
                 <th style={styles.th}>Date & Time</th>
-                <th style={styles.th}>Room</th>
+                <th style={styles.th}>Duration</th>
+                <th style={styles.th}>Participants</th>
               </tr>
             </thead>
             <tbody>
@@ -194,9 +234,8 @@ function MeetingRow({ meeting, projectId, token, onSelect }) {
           hour: '2-digit', minute: '2-digit',
         })}
       </td>
-      <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 12, color: '#5f6368' }}>
-        {meeting.room_name}
-      </td>
+      <td style={{ ...styles.td, color: '#9aa0a6' }}>{fmtDuration(meeting.duration_seconds)}</td>
+      <td style={{ ...styles.td, color: '#9aa0a6' }}>{meeting.participant_count}</td>
     </tr>
   )
 }
@@ -205,16 +244,6 @@ function MeetingDetail({ meeting }) {
   const fmtTime = iso => iso
     ? new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : '—'
-
-  const fmtDuration = secs => {
-    if (secs == null) return 'Ongoing'
-    const h = Math.floor(secs / 3600)
-    const m = Math.floor((secs % 3600) / 60)
-    const s = secs % 60
-    if (h > 0) return `${h}h ${m}m`
-    if (m > 0) return `${m}m ${s}s`
-    return `${s}s`
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -318,7 +347,13 @@ const styles = {
   barCol: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' },
   bar: { width: '100%', background: 'linear-gradient(180deg,#4d94ff,#1a73e8)', borderRadius: '3px 3px 0 0', transition: 'height .3s' },
   barLabel: { fontSize: 9, color: '#5f6368', marginTop: 4, textAlign: 'center', whiteSpace: 'nowrap' },
-  sectionTitle: { fontSize: 13, fontWeight: 600, color: '#9aa0a6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontWeight: 600, color: '#9aa0a6', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 0 },
+  csvBtn: {
+    display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,.06)',
+    border: '1px solid rgba(255,255,255,.12)', borderRadius: 8,
+    color: '#e8eaed', fontSize: 13, fontWeight: 500, padding: '6px 12px',
+    cursor: 'pointer', transition: 'background .15s',
+  },
   table: { width: '100%', borderCollapse: 'collapse' },
   th: { padding: '8px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#9aa0a6', borderBottom: '1px solid rgba(255,255,255,.07)' },
   tr: { borderBottom: '1px solid rgba(255,255,255,.05)' },
