@@ -1,18 +1,52 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiFetch } from '../api.js'
-import ProjectCard from './ProjectCard.jsx'
 import CreateModal from './CreateModal.jsx'
-import EmbedModal from './EmbedModal.jsx'
-import DomainsModal from './DomainsModal.jsx'
-import AnalyticsModal from './AnalyticsModal.jsx'
+import OverviewPage from './OverviewPage.jsx'
+import AnalyticsPage from './AnalyticsPage.jsx'
+import ActivityPage from './ActivityPage.jsx'
+import RecordingsPage from './RecordingsPage.jsx'
+import ApiKeysPage from './ApiKeysPage.jsx'
+import WebhooksPage from './WebhooksPage.jsx'
+import ReleasesPage from './ReleasesPage.jsx'
+import TeamPage from './TeamPage.jsx'
+import MyPlanPage from './MyPlanPage.jsx'
+import BillingPage from './BillingPage.jsx'
+import StartGuidePage from './StartGuidePage.jsx'
+import FAQPage from './FAQPage.jsx'
+import ContactSupportPage from './ContactSupportPage.jsx'
+
+// null = separator line
+const NAV_SECTIONS = [
+  [
+    { id: 'overview',   label: 'Overview',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+    { id: 'activity',   label: 'Activity',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+    { id: 'api-keys',   label: 'API Keys',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> },
+    { id: 'webhooks',   label: 'Webhooks',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg> },
+    { id: 'analytics',  label: 'Analytics',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
+    { id: 'releases',   label: 'Releases',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> },
+    { id: 'recordings', label: 'Recordings', icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg> },
+  ],
+  [
+    { id: 'team',     label: 'Team',     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+    { id: 'my-plan',  label: 'My Plan',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
+    { id: 'billing',  label: 'Billing',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
+  ],
+  [
+    { id: 'start-guide',      label: 'Start Guide',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+    { id: 'faq',              label: 'FAQ',              icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> },
+    { id: 'contact-support',  label: 'Contact Support',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
+  ],
+]
+
 export default function Dashboard({ user, token, onLogout }) {
   const [projects, setProjects] = useState([])
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [activePage, setActivePage] = useState('overview')
   const [createOpen, setCreateOpen] = useState(false)
-  const [embedProject, setEmbedProject] = useState(null)
-  const [domainsProject, setDomainsProject] = useState(null)
-  const [analyticsProject, setAnalyticsProject] = useState(null)
-const [toast, setToast] = useState({ msg: '', show: false })
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [toast, setToast] = useState({ msg: '', show: false })
   const toastTimer = useRef(null)
+  const dropdownRef = useRef(null)
 
   const showToast = useCallback((msg) => {
     clearTimeout(toastTimer.current)
@@ -24,6 +58,10 @@ const [toast, setToast] = useState({ msg: '', show: false })
     try {
       const data = await apiFetch('/projects', {}, token)
       setProjects(data)
+      setSelectedProject(prev => {
+        if (prev) return data.find(p => p.id === prev.id) || data[0] || null
+        return data[0] || null
+      })
     } catch (e) {
       showToast('Failed to load projects: ' + e.message)
     }
@@ -31,124 +69,143 @@ const [toast, setToast] = useState({ msg: '', show: false })
 
   useEffect(() => { loadProjects() }, [loadProjects])
 
-  async function openEmbedModal(id, name) {
-    setEmbedProject({ id, name, html: null, room_name: null })
-    try {
-      const data = await apiFetch(`/projects/${id}/embed`, {}, token)
-      setEmbedProject({ id, name, html: data.html, room_name: data.room_name })
-    } catch (e) {
-      showToast('Error: ' + e.message)
-      setEmbedProject(null)
+  useEffect(() => {
+    function handler(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false)
     }
-  }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
-  async function deleteProject(id, name) {
-    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
-    try {
-      await apiFetch(`/projects/${id}`, { method: 'DELETE' }, token)
-      showToast('Project deleted.')
-      loadProjects()
-    } catch (e) {
-      showToast('Delete failed: ' + e.message)
-    }
-  }
+  function selectProject(p) { setSelectedProject(p); setDropdownOpen(false); setActivePage('overview') }
+
+  const projectPages = ['overview','activity','api-keys','webhooks','analytics','releases','recordings']
+  const needsProject = projectPages.includes(activePage)
+  const pageProps = { project: selectedProject, token, onToast: showToast, user }
 
   return (
-    <>
-      <div style={{ minHeight: '100vh' }}>
-        <div className="topbar">
-          <div className="topbar-logo">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
-            </svg>
-            WebRTC Platform
-          </div>
-          <div className="topbar-right">
-            <div className="user-badge">
-              <div className="user-avatar">{user.email[0].toUpperCase()}</div>
-              <span>{user.email}</span>
-            </div>
-            <button className="btn btn-ghost btn-sm" onClick={onLogout}>Sign Out</button>
-          </div>
+    <div className="app-layout">
+      {/* ── Sidebar ──────────────────────────────────────────────────────── */}
+      <aside className="sidebar">
+        {/* Brand */}
+        <div className="sidebar-brand">
+          <div className="sidebar-brand-name">RoomLy</div>
+          <div className="sidebar-brand-tagline">Video as a Service</div>
         </div>
 
-        <div className="content">
-          <div className="page-header">
-            <div>
-              <h1>My Projects</h1>
-              <p>Each project generates a self-contained embed code with its own room and token.</p>
-            </div>
-            <button className="btn btn-primary" onClick={() => setCreateOpen(true)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-              New Project
-            </button>
+        {/* Project switcher */}
+        <div className="project-switcher" ref={dropdownRef} onClick={() => setDropdownOpen(o => !o)}>
+          <div className="project-avatar">{selectedProject ? selectedProject.name[0].toUpperCase() : '?'}</div>
+          <div className="project-switcher-info">
+            <div className="project-switcher-label">Project</div>
+            <div className="project-switcher-name">{selectedProject ? selectedProject.name : 'No project'}</div>
           </div>
-
-          <div className="projects-grid">
-            {projects.length === 0 ? (
-              <div className="empty-state">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                </svg>
-                <h3>No projects yet</h3>
-                <p>Create your first embeddable meeting room to get started.</p>
-                <button className="btn btn-primary" style={{ marginTop: '16px' }} onClick={() => setCreateOpen(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                  </svg>
-                  Create your first project
-                </button>
+          <svg className={`project-switcher-chevron${dropdownOpen ? ' open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          {dropdownOpen && (
+            <div className="project-dropdown" onClick={e => e.stopPropagation()}>
+              {projects.map(p => (
+                <div key={p.id} className={`project-dropdown-item${selectedProject?.id === p.id ? ' active' : ''}`} onClick={() => selectProject(p)}>
+                  <div className="project-avatar" style={{ width: 22, height: 22, fontSize: 10, borderRadius: 5 }}>{p.name[0].toUpperCase()}</div>
+                  {p.name}
+                </div>
+              ))}
+              {projects.length > 0 && <div className="project-dropdown-divider" />}
+              <div className="project-dropdown-new" onClick={() => { setDropdownOpen(false); setCreateOpen(true) }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New Project
               </div>
-            ) : projects.map(p => (
-              <ProjectCard
-                key={p.id}
-                project={p}
-                onAnalytics={() => setAnalyticsProject({ id: p.id, name: p.name })}
-                onEmbed={() => openEmbedModal(p.id, p.name)}
-                onDomains={() => setDomainsProject({ id: p.id, name: p.name })}
-                onDelete={() => deleteProject(p.id, p.name)}
-              />
-            ))}
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+
+        {/* New project button */}
+        <div style={{ padding: '6px 12px 2px' }}>
+          <button className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center' }} onClick={() => setCreateOpen(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Project
+          </button>
+        </div>
+
+        {/* Nav sections */}
+        <nav className="sidebar-nav">
+          {NAV_SECTIONS.map((section, si) => (
+            <div key={si}>
+              {si > 0 && <div className="sidebar-sep" />}
+              {section.map(item => (
+                <button
+                  key={item.id}
+                  className={`nav-item${activePage === item.id ? ' active' : ''}`}
+                  onClick={() => setActivePage(item.id)}
+                >
+                  {item.icon}
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        {/* Bottom */}
+        <div className="sidebar-bottom">
+          <div className="sidebar-user">
+            <div className="sidebar-user-avatar">{user.email[0].toUpperCase()}</div>
+            <div className="sidebar-user-email">{user.email}</div>
+          </div>
+          <button className="nav-item" style={{ color: 'var(--danger)' }} onClick={onLogout}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main ─────────────────────────────────────────────────────────── */}
+      <main className="main-content">
+        {needsProject && !selectedProject ? (
+          <NoProjectState onCreateOpen={() => setCreateOpen(true)} />
+        ) : (
+          <>
+            {activePage === 'overview'         && <OverviewPage        {...pageProps} />}
+            {activePage === 'activity'         && <ActivityPage        {...pageProps} />}
+            {activePage === 'api-keys'         && <ApiKeysPage         {...pageProps} />}
+            {activePage === 'webhooks'         && <WebhooksPage        {...pageProps} />}
+            {activePage === 'analytics'        && <AnalyticsPage       {...pageProps} />}
+            {activePage === 'releases'         && <ReleasesPage />}
+            {activePage === 'recordings'       && <RecordingsPage      {...pageProps} />}
+            {activePage === 'team'             && <TeamPage            {...pageProps} />}
+            {activePage === 'my-plan'          && <MyPlanPage />}
+            {activePage === 'billing'          && <BillingPage />}
+            {activePage === 'start-guide'      && <StartGuidePage />}
+            {activePage === 'faq'              && <FAQPage />}
+            {activePage === 'contact-support'  && <ContactSupportPage />}
+          </>
+        )}
+      </main>
 
       {createOpen && (
-        <CreateModal
-          token={token}
-          onClose={() => setCreateOpen(false)}
-          onCreated={() => { setCreateOpen(false); showToast('Project created!'); loadProjects() }}
-        />
+        <CreateModal token={token} onClose={() => setCreateOpen(false)}
+          onCreated={() => { setCreateOpen(false); showToast('Project created!'); loadProjects() }} />
       )}
-
-      {embedProject && (
-        <EmbedModal
-          project={embedProject}
-          onClose={() => setEmbedProject(null)}
-          onToast={showToast}
-        />
-      )}
-
-      {domainsProject && (
-        <DomainsModal
-          project={domainsProject}
-          token={token}
-          onClose={() => setDomainsProject(null)}
-          onToast={showToast}
-        />
-      )}
-
-      {analyticsProject && (
-        <AnalyticsModal
-          project={analyticsProject}
-          token={token}
-          onClose={() => setAnalyticsProject(null)}
-        />
-      )}
-
       <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
-    </>
+    </div>
+  )
+}
+
+function NoProjectState({ onCreateOpen }) {
+  return (
+    <div className="page-content">
+      <div className="empty-state" style={{ padding: '120px 20px' }}>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        <h3>No projects yet</h3>
+        <p>Create your first project to get an embeddable meeting room.</p>
+        <button className="btn btn-primary" style={{ marginTop: 20 }} onClick={onCreateOpen}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Create Project
+        </button>
+      </div>
+    </div>
   )
 }

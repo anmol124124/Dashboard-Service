@@ -70,7 +70,10 @@ export default function AuthView({ onLogin, selectedPlan }) {
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>
           </svg>
-          <span>WebRTC Platform</span>
+          <div>
+            <span>WebRTC Platform</span>
+            <div style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 400, letterSpacing: 0.2, marginTop: 1 }}>Embeddable video meetings</div>
+          </div>
         </div>
 
         {selectedPlan && (

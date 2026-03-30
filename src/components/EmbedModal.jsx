@@ -29,7 +29,11 @@ export default function EmbedModal({ project, onClose, onToast }) {
       <div className="modal modal-wide">
         <div className="modal-head">
           <h2>Embed Code — {project.name}</h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
         <div className="modal-body">
           {/* How-to note */}
