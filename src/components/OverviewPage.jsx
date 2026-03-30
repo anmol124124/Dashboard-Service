@@ -101,7 +101,7 @@ export default function OverviewPage({ project, token, onToast }) {
   return (
     <div className="page-content">
       <div className="page-heading">
-        <h1>{project.name}</h1>
+        <h1 className="glitch-title" data-text={project.name}>{project.name}</h1>
         <p>Embed code and quick stats for your project.</p>
       </div>
 
