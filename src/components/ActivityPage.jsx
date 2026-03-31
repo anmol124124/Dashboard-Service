@@ -68,23 +68,26 @@ function eventText(ev) {
   }
 }
 
-export default function ActivityPage({ project, token }) {
+export default function ActivityPage({ project, token, user }) {
   const [analytics, setAnalytics] = useState(null)
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [events, setEvents]       = useState([])
+  const [loading, setLoading]     = useState(true)
+  const [mauData, setMauData]     = useState(null)
 
   useEffect(() => {
-    setAnalytics(null); setEvents([]); setLoading(true)
+    setAnalytics(null); setEvents([]); setLoading(true); setMauData(null)
     Promise.all([
       apiFetch(`/projects/${project.id}/analytics`, {}, token),
       apiFetch(`/projects/${project.id}/activity`, {}, token),
-    ]).then(([a, act]) => {
+      apiFetch(`/projects/${project.id}/mau`, {}, token),
+    ]).then(([a, act, m]) => {
       setAnalytics(a)
       setEvents(act.events || [])
+      setMauData(m)
     }).finally(() => setLoading(false))
   }, [project.id, token])
 
-  // Build MAU / daily chart data
+  // Build daily chart data from meeting participant counts
   const today = new Date()
   const days14 = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today); d.setDate(today.getDate() - (13 - i))
@@ -103,13 +106,12 @@ export default function ActivityPage({ project, token }) {
   const chartData   = days14.map(d => countByDay[d])
   const chartLabels = days14.map(d => { const dt = new Date(d); return `${dt.toLocaleString('default',{month:'short'})} ${dt.getDate()}` })
 
-  // MAU = sum of all participant sessions this month
-  const thisMonth = today.toISOString().slice(0, 7)
-  const mau = analytics
-    ? analytics.meetings.filter(m => m.created_at.startsWith(thisMonth)).reduce((s, m) => s + (m.participant_count || 0), 0)
-    : 0
-  const planLimit = 100
-  const pct = Math.round((mau / planLimit) * 100)
+  // Real MAU from project_mau table (unique users, matches enforcement)
+  const mau        = mauData?.current ?? 0
+  const planLimit  = mauData ? (mauData.unlimited ? null : mauData.limit) : null
+  const planName   = mauData ? (mauData.plan.charAt(0).toUpperCase() + mauData.plan.slice(1)) : (user?.plan || 'basic')
+  const isUnlimited = planLimit === null
+  const pct = isUnlimited ? 0 : Math.round((mau / planLimit) * 100)
 
   const monthLabel = today.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
 
@@ -136,18 +138,27 @@ export default function ActivityPage({ project, token }) {
                   <div style={{ fontSize: 14, color: 'var(--muted)' }}>MAU*</div>
                 </div>
                 {/* Progress bar */}
-                <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 4, height: 6, marginBottom: 8, overflow: 'hidden' }}>
-                  <div style={{ background: 'var(--primary-g)', height: '100%', width: `${Math.min(pct, 100)}%`, borderRadius: 4, transition: 'width .5s' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                  <span>{mau} sessions</span>
-                  <span>{100 - pct > 0 ? `${100 - pct}% remaining` : 'Limit reached'}</span>
-                  <span>{planLimit} limit</span>
-                </div>
+                {!isUnlimited && (
+                  <>
+                    <div style={{ background: 'rgba(255,255,255,.08)', borderRadius: 4, height: 6, marginBottom: 8, overflow: 'hidden' }}>
+                      <div style={{ background: 'var(--primary-g)', height: '100%', width: `${Math.min(pct, 100)}%`, borderRadius: 4, transition: 'width .5s' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
+                      <span>{mau} sessions</span>
+                      <span>{pct < 100 ? `${100 - pct}% remaining` : 'Limit reached'}</span>
+                      <span>{planLimit} limit</span>
+                    </div>
+                  </>
+                )}
+                {isUnlimited && (
+                  <div style={{ fontSize: 13, color: 'var(--green)' }}>Unlimited — no restrictions</div>
+                )}
               </div>
               <div style={{ flex: 1, minWidth: 140, background: 'rgba(108,99,255,.08)', border: '1px solid rgba(108,99,255,.2)', borderRadius: 10, padding: '16px 20px' }}>
-                <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600, marginBottom: 6 }}>RoomLy Free</div>
-                <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{planLimit}</div>
+                <div style={{ fontSize: 12, color: 'var(--primary)', fontWeight: 600, marginBottom: 6 }}>{planName} Plan</div>
+                <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>
+                  {isUnlimited ? '∞' : planLimit}
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>MAU* limit</div>
               </div>
             </div>

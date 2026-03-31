@@ -63,17 +63,19 @@ function syntaxHighlight(code) {
 }
 
 /* ── Component ────────────────────────────────────────────────────────────── */
-export default function OverviewPage({ project, token, onToast }) {
+export default function OverviewPage({ project, token, onToast, user }) {
   const [embedData, setEmbedData] = useState(null)
   const [analytics, setAnalytics] = useState(null)
+  const [mau, setMau] = useState(null)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    setEmbedData(null); setAnalytics(null)
+    setEmbedData(null); setAnalytics(null); setMau(null)
     Promise.all([
       apiFetch(`/projects/${project.id}/embed`, {}, token),
       apiFetch(`/projects/${project.id}/analytics`, {}, token),
-    ]).then(([e, a]) => { setEmbedData(e); setAnalytics(a) })
+      apiFetch(`/projects/${project.id}/mau`, {}, token),
+    ]).then(([e, a, m]) => { setEmbedData(e); setAnalytics(a); setMau(m) })
       .catch(e => onToast('Failed to load: ' + e.message))
   }, [project.id, token])
 
@@ -106,7 +108,7 @@ export default function OverviewPage({ project, token, onToast }) {
       </div>
 
       {/* Stats */}
-      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginBottom: 28 }}>
+      <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', marginBottom: 28 }}>
         <div className="stat-card">
           <div className="stat-value">{analytics ? analytics.total : '—'}</div>
           <div className="stat-label">Total Meetings</div>
@@ -120,6 +122,23 @@ export default function OverviewPage({ project, token, onToast }) {
             {project.room_name}
           </div>
           <div className="stat-label">Room Name</div>
+        </div>
+        <div className="stat-card" style={{ borderTopColor: mau?.unlimited ? 'var(--green)' : mau && mau.current >= mau.limit ? 'var(--danger)' : 'var(--primary)' }}>
+          <div className="stat-value" style={{ color: mau?.unlimited ? 'var(--green)' : mau && mau.current >= mau.limit ? 'var(--danger)' : 'var(--primary)' }}>
+            {mau ? (mau.unlimited ? '∞' : `${mau.current}/${mau.limit}`) : '—'}
+          </div>
+          <div className="stat-label">MAU This Month</div>
+          {mau && !mau.unlimited && (
+            <div style={{ marginTop: 8, height: 4, background: 'var(--surface3)', borderRadius: 99 }}>
+              <div style={{
+                height: '100%',
+                width: `${Math.min((mau.current / mau.limit) * 100, 100)}%`,
+                borderRadius: 99,
+                background: mau.current >= mau.limit ? 'var(--danger)' : 'var(--primary)',
+                transition: 'width 0.4s',
+              }} />
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,8 +1,9 @@
-const INVOICES = [
-  { no: 'ROOMLY-0001', status: 'Paid', amount: '$0.00', issued: 'Mar 1, 2026', due: 'Mar 1, 2026' },
-]
+const PLAN_PRICES = { basic: '$9.99', pro: '$29.99', premium: '$99.99' }
 
-export default function BillingPage() {
+export default function BillingPage({ user }) {
+  const planKey = user?.plan || 'basic'
+  const planName = planKey.charAt(0).toUpperCase() + planKey.slice(1)
+  const planPrice = PLAN_PRICES[planKey] || '$9.99'
   return (
     <div className="page-content">
       <div className="page-heading">
@@ -16,8 +17,10 @@ export default function BillingPage() {
           <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 20 }}>Your upcoming bill</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>Total usage</div>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>$0.00</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 4 }}>
+                {planName} Plan — monthly
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{planPrice}</div>
             </div>
             <div style={{ fontSize: 13, color: 'var(--muted)' }}>
               Your next bill will be sent on <strong style={{ color: 'var(--text)' }}>May 1, 2026</strong>
@@ -82,7 +85,7 @@ export default function BillingPage() {
       </div>
 
       <div style={{ marginTop: 14, fontSize: 13, color: 'var(--muted)' }}>
-        Currently on the Free plan — $0.00/month. No charges will be made.
+        Currently on the <strong style={{ color: 'var(--text)' }}>{planName}</strong> plan — {planPrice}/month.
       </div>
     </div>
   )
