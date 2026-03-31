@@ -160,7 +160,7 @@ export default function Dashboard({ user, token, onLogout }) {
                 <button
                   key={item.id}
                   className={`nav-item${activePage === item.id ? ' active' : ''}`}
-                  onClick={() => setActivePage(item.id)}
+                  onClick={() => { setActivePage(item.id); if (item.id === 'overview') window.resizeTo(1512, 982); }}
                 >
                   {item.icon}
                   {item.label}
