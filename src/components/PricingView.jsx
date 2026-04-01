@@ -24,7 +24,7 @@ const PLANS = [
     price: '29.99',
     desc: 'Everything you need to run a professional video platform.',
     features: [
-      '15 MAU / month',
+      '20 MAU / month',
       '1 project',
       'Unlimited meetings',
       'HD video + cloud recording',
