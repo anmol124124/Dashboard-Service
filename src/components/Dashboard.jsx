@@ -93,8 +93,17 @@ export default function Dashboard({ user, token, onLogout, onPlanUpgrade }) {
       <aside className="sidebar">
         {/* Brand */}
         <div className="sidebar-brand">
-          <div className="sidebar-brand-name">RoomLy</div>
-          <div className="sidebar-brand-tagline">Video as a Service</div>
+          <div className="sidebar-brand-row">
+            <div className="sidebar-brand-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff">
+                <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+              </svg>
+            </div>
+            <div>
+              <div className="sidebar-brand-name">RoomLy 8*8</div>
+              <div className="sidebar-brand-tagline">Video as a Service</div>
+            </div>
+          </div>
         </div>
 
         {/* Project switcher */}
