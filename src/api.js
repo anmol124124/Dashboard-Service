@@ -34,3 +34,10 @@ export async function createCheckoutSession(plan, token) {
 export async function verifySession(sessionId, token) {
   return apiFetch(`/payments/verify-session?session_id=${encodeURIComponent(sessionId)}`, {}, token)
 }
+
+export async function activatePlan(plan, token) {
+  return apiFetch('/payments/activate-plan', {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  }, token)
+}

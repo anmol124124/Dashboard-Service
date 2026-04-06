@@ -111,7 +111,7 @@ export default function MyPlanPage({ user, onUpgrade }) {
             <button
               className="btn btn-primary"
               style={{ marginTop: 14 }}
-              onClick={() => onUpgrade && onUpgrade()}
+              onClick={() => onUpgrade && onUpgrade(upgradeTarget)}
             >
               Upgrade to {PLANS[upgradeTarget].name} — {upgradePrice}/mo →
             </button>
@@ -188,7 +188,7 @@ export default function MyPlanPage({ user, onUpgrade }) {
               Upgrade to {PLANS[upgradeTarget]?.name} for {upgradePrice}/mo
             </div>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => onUpgrade && onUpgrade()}>
+          <button className="btn btn-primary btn-sm" onClick={() => onUpgrade && onUpgrade(upgradeTarget)}>
             View upgrade options →
           </button>
         </div>

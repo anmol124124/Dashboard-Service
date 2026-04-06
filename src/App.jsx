@@ -78,11 +78,15 @@ export default function App() {
     setView('pricing')
   }
 
+  function handlePlanUpgrade(plan, email) {
+    setUser(prev => ({ ...prev, plan, email: email || prev?.email }))
+  }
+
   if (view === 'loading') return null
 
   if (view === 'pricing') return <PricingView onSelectPlan={handleSelectPlan} />
 
   if (view === 'auth') return <AuthView onLogin={handleLogin} selectedPlan={selectedPlan} />
 
-  return <Dashboard user={user} token={token} onLogout={handleLogout} />
+  return <Dashboard user={user} token={token} onLogout={handleLogout} onPlanUpgrade={handlePlanUpgrade} />
 }

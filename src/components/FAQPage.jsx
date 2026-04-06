@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 const FAQS = [
   {
-    q: 'What is a MAU (Monthly Active User)?',
-    a: 'A Monthly Active User is counted as one participant session in a meeting during the month. If the same person joins 3 different meetings, that counts as 3 sessions. The Free plan includes 100 sessions per month.',
+    q: 'What is a MAU (Meeting Active User)?',
+    a: 'A Meeting Active User is a unique participant who joins at least one meeting in a given month. Each unique person is counted once per month regardless of how many meetings they join. Your plan limit determines how many unique participants can join your meetings each month.',
   },
   {
     q: 'How do I embed RoomLy in my website?',
@@ -39,7 +39,7 @@ const FAQS = [
   },
   {
     q: 'What happens when I reach my MAU limit?',
-    a: 'On the Free plan, the meeting embed will continue to work but new sessions may be throttled. Upgrade options with higher limits will be available soon.',
+    a: 'Once the monthly limit of unique participants is reached, new participants will be blocked from joining meetings until the month resets or you upgrade your plan.',
   },
 ]
 

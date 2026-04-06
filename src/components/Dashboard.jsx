@@ -10,7 +10,7 @@ import WebhooksPage from './WebhooksPage.jsx'
 import ReleasesPage from './ReleasesPage.jsx'
 import TeamPage from './TeamPage.jsx'
 import MyPlanPage from './MyPlanPage.jsx'
-import BillingPage from './BillingPage.jsx'
+import MockCheckout from './MockCheckout.jsx'
 import StartGuidePage from './StartGuidePage.jsx'
 import FAQPage from './FAQPage.jsx'
 import ContactSupportPage from './ContactSupportPage.jsx'
@@ -31,7 +31,6 @@ const NAV_SECTIONS = [
   [
     { id: 'team',     label: 'Team',     icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
     { id: 'my-plan',  label: 'My Plan',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
-    { id: 'billing',  label: 'Billing',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
   ],
   [
     { id: 'start-guide',      label: 'Start Guide',      icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
@@ -40,15 +39,18 @@ const NAV_SECTIONS = [
   ],
 ]
 
-export default function Dashboard({ user, token, onLogout }) {
+export default function Dashboard({ user, token, onLogout, onPlanUpgrade }) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
-  const [activePage, setActivePage] = useState('overview')
+  const [activePage, setActivePage] = useState(() => sessionStorage.getItem('dash_page') || 'overview')
   const [createOpen, setCreateOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })
+  const [checkoutPlan, setCheckoutPlan] = useState(null)
   const toastTimer = useRef(null)
   const dropdownRef = useRef(null)
+
+  function navTo(page) { sessionStorage.setItem('dash_page', page); setActivePage(page) }
 
   const showToast = useCallback((msg) => {
     clearTimeout(toastTimer.current)
@@ -79,7 +81,7 @@ export default function Dashboard({ user, token, onLogout }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  function selectProject(p) { setSelectedProject(p); setDropdownOpen(false); setActivePage('overview') }
+  function selectProject(p) { setSelectedProject(p); setDropdownOpen(false); navTo('overview') }
 
   const projectPages = ['overview','activity','api-keys','webhooks','analytics','releases','recordings','provisioning']
   const needsProject = projectPages.includes(activePage)
@@ -120,7 +122,7 @@ export default function Dashboard({ user, token, onLogout }) {
                   New Project
                 </div>
               ) : (
-                <div className="project-dropdown-new" style={{ opacity: 0.5, cursor: 'not-allowed' }} onClick={() => { setDropdownOpen(false); setActivePage('my-plan'); showToast('Upgrade to Premium for unlimited projects'); }}>
+                <div className="project-dropdown-new" style={{ opacity: 0.5, cursor: 'not-allowed' }} onClick={() => { setDropdownOpen(false); navTo('my-plan'); showToast('Upgrade to Premium for unlimited projects'); }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                   Premium Only
                 </div>
@@ -143,7 +145,7 @@ export default function Dashboard({ user, token, onLogout }) {
               className="btn btn-sm"
               style={{ width: '100%', justifyContent: 'center', opacity: 0.5, cursor: 'not-allowed', background: 'var(--surface3)', color: 'var(--muted)', border: '1px solid var(--border)' }}
               title="Upgrade to Premium to create more projects"
-              onClick={() => { setActivePage('my-plan'); showToast('Upgrade to Premium for unlimited projects'); }}
+              onClick={() => { navTo('my-plan'); showToast('Upgrade to Premium for unlimited projects'); }}
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               Premium Only
@@ -160,7 +162,7 @@ export default function Dashboard({ user, token, onLogout }) {
                 <button
                   key={item.id}
                   className={`nav-item${activePage === item.id ? ' active' : ''}`}
-                  onClick={() => { setActivePage(item.id); if (item.id === 'overview') window.resizeTo(1512, 982); }}
+                  onClick={() => { navTo(item.id); if (item.id === 'overview') window.resizeTo(1512, 982); }}
                 >
                   {item.icon}
                   {item.label}
@@ -198,8 +200,7 @@ export default function Dashboard({ user, token, onLogout }) {
             {activePage === 'recordings'       && <RecordingsPage      {...pageProps} />}
             {activePage === 'provisioning'     && <ProvisioningPage    {...pageProps} />}
             {activePage === 'team'             && <TeamPage            {...pageProps} />}
-            {activePage === 'my-plan'          && <MyPlanPage user={user} onUpgrade={() => setActivePage('billing')} />}
-            {activePage === 'billing'          && <BillingPage user={user} />}
+            {activePage === 'my-plan'          && <MyPlanPage user={user} onUpgrade={(plan) => setCheckoutPlan(plan)} />}
             {activePage === 'start-guide'      && <StartGuidePage />}
             {activePage === 'faq'              && <FAQPage />}
             {activePage === 'contact-support'  && <ContactSupportPage />}
@@ -210,6 +211,20 @@ export default function Dashboard({ user, token, onLogout }) {
       {createOpen && (
         <CreateModal token={token} onClose={() => setCreateOpen(false)}
           onCreated={() => { setCreateOpen(false); showToast('Project created!'); loadProjects() }} />
+      )}
+      {checkoutPlan && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
+          <MockCheckout
+            plan={checkoutPlan}
+            token={token}
+            onSuccess={(plan, email) => {
+              setCheckoutPlan(null)
+              onPlanUpgrade && onPlanUpgrade(plan, email)
+              showToast(`Upgraded to ${plan.charAt(0).toUpperCase() + plan.slice(1)}!`)
+            }}
+            onCancel={() => setCheckoutPlan(null)}
+          />
+        </div>
       )}
       <div className={`toast ${toast.show ? 'show' : ''}`}>{toast.msg}</div>
     </div>
