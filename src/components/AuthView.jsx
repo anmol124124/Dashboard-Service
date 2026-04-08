@@ -46,8 +46,10 @@ export default function AuthView({ onLogin, selectedPlan }) {
       })
       const token = data.access_token
 
-      // 3. If a plan was selected, redirect to Stripe Checkout
-      if (selectedPlan) {
+      // 3. If a paid plan was selected, redirect to Stripe Checkout
+      //    'starter' is free — skip payment and go straight to dashboard
+      const isFree = !selectedPlan || selectedPlan === 'starter'
+      if (!isFree) {
         const { checkout_url } = await createCheckoutSession(selectedPlan, token)
         localStorage.setItem('wrtc_token', token)
         window.location.href = checkout_url
@@ -126,7 +128,7 @@ export default function AuthView({ onLogin, selectedPlan }) {
             </div>
             <button className="btn btn-primary btn-full" onClick={doSignup} disabled={loading}>
               {loading && <span className="spin" />}
-              {selectedPlan ? 'Create Account & Pay' : 'Create Account'}
+              {selectedPlan && selectedPlan !== 'starter' ? 'Create Account & Pay' : 'Create Account'}
             </button>
           </>
         )}

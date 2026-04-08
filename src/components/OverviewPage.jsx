@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../api.js'
+import ScheduleProjectMeetingModal from './ScheduleProjectMeetingModal.jsx'
 
 /* ── Syntax highlighter ───────────────────────────────────────────────────── */
 function syntaxHighlight(code) {
@@ -67,6 +68,7 @@ export default function OverviewPage({ project, token, onToast, user }) {
   const [embedData, setEmbedData] = useState(null)
   const [analytics, setAnalytics] = useState(null)
   const [copied, setCopied] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
   useEffect(() => {
     setEmbedData(null); setAnalytics(null)
@@ -100,9 +102,21 @@ export default function OverviewPage({ project, token, onToast, user }) {
 
   return (
     <div className="page-content">
-      <div className="page-heading">
-        <h1 className="glitch-title" data-text={project.name}>{project.name}</h1>
-        <p>Embed code and quick stats for your project.</p>
+      <div className="page-heading" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 className="glitch-title" data-text={project.name}>{project.name}</h1>
+          <p>Embed code and quick stats for your project.</p>
+        </div>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => setScheduleOpen(true)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          Schedule Meeting
+        </button>
       </div>
 
       {/* Stats */}
@@ -175,6 +189,15 @@ export default function OverviewPage({ project, token, onToast, user }) {
           The embed is self-contained — no additional setup required. Go to <strong style={{ color: 'var(--text)' }}>API Keys</strong> to get your raw token.
         </div>
       </div>
+
+      {scheduleOpen && (
+        <ScheduleProjectMeetingModal
+          project={project}
+          token={token}
+          onClose={() => setScheduleOpen(false)}
+          onToast={onToast}
+        />
+      )}
     </div>
   )
 }

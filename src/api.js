@@ -41,3 +41,10 @@ export async function activatePlan(plan, token) {
     body: JSON.stringify({ plan }),
   }, token)
 }
+
+export async function submitContactInquiry(data) {
+  return apiFetch('/contact', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
