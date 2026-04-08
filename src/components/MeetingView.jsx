@@ -3,6 +3,11 @@ const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
   'http://localhost:8000'
 
+const DASHBOARD_URL =
+  window.DASHBOARD_URL ||
+  import.meta.env.VITE_DASHBOARD_URL ||
+  'http://localhost:5174'
+
 export default function MeetingView({ project, onClose }) {
   // Build standalone HTML with the host token baked in directly
   const html = `<!DOCTYPE html>
@@ -18,9 +23,10 @@ export default function MeetingView({ project, onClose }) {
     <script>
       window.onload = function() {
         new WebRTCMeetingAPI({
-          roomName:   "${project.room_name}",
-          token:      "${project.host_token}",
-          parentNode: document.querySelector('#mc'),
+          roomName:      "${project.room_name}",
+          token:         "${project.host_token}",
+          parentNode:    document.querySelector('#mc'),
+          upgradePlanUrl: "${DASHBOARD_URL}/?upgrade=1",
         });
       };
     </script>
