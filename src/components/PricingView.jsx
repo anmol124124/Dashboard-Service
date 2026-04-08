@@ -263,13 +263,32 @@ function ContactModal({ onClose }) {
   )
 }
 
-export default function PricingView({ onSelectPlan }) {
+// Map backend plan names → pricing card keys
+const PLAN_ORDER = ['starter', 'basic', 'pro', 'enterprise']
+function normalizePlan(plan) {
+  if (!plan || plan === 'free') return 'starter'
+  if (plan === 'premium') return 'enterprise'
+  return plan
+}
+
+export default function PricingView({ onSelectPlan, currentPlan = null }) {
   const [annual, setAnnual]         = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
+
+  const activePlan = normalizePlan(currentPlan)
 
   function getPrice(plan) {
     if (!plan.monthlyPrice) return null
     return annual ? (plan.monthlyPrice * 0.8).toFixed(2) : plan.monthlyPrice.toFixed(2)
+  }
+
+  function getPlanStatus(planKey) {
+    if (!currentPlan && planKey !== 'starter') return 'upgrade'
+    const currentIdx = PLAN_ORDER.indexOf(activePlan)
+    const planIdx    = PLAN_ORDER.indexOf(planKey)
+    if (planIdx === currentIdx) return 'current'
+    if (planIdx > currentIdx)  return 'upgrade'
+    return 'downgrade'
   }
 
   return (
@@ -339,7 +358,9 @@ export default function PricingView({ onSelectPlan }) {
 
           {/* ── Paid plans (Starter, Basic, Pro) ── */}
           {PLANS.map((plan, idx) => {
-            const price = getPrice(plan)
+            const price      = getPrice(plan)
+            const status     = getPlanStatus(plan.key)
+            const isCurrent  = status === 'current'
             return (
               <div
                 key={plan.key}
@@ -351,7 +372,11 @@ export default function PricingView({ onSelectPlan }) {
                     : 'transparent',
                 }}
               >
-                {plan.popular ? (
+                {isCurrent ? (
+                  <div style={{ background:'rgba(52,168,83,.2)', borderBottom:'1px solid rgba(52,168,83,.3)', color:'#34a853', textAlign:'center', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', padding:'7px 0' }}>
+                    Your Current Plan
+                  </div>
+                ) : plan.popular ? (
                   <div style={{ background:plan.color, color:'#fff', textAlign:'center', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', padding:'7px 0' }}>
                     Most Popular
                   </div>
@@ -392,20 +417,25 @@ export default function PricingView({ onSelectPlan }) {
                   </div>
 
                   <button
-                    onClick={() => onSelectPlan(plan.key)}
+                    onClick={() => !isCurrent && onSelectPlan(plan.key)}
+                    disabled={isCurrent}
                     style={{
-                      background: plan.popular ? `linear-gradient(135deg,${plan.color},${plan.color}cc)` : 'transparent',
-                      color: plan.popular ? '#fff' : plan.color,
-                      border: `1.5px solid ${plan.popular ? 'transparent' : plan.color + '80'}`,
+                      background: isCurrent
+                        ? 'rgba(52,168,83,.12)'
+                        : plan.popular ? `linear-gradient(135deg,${plan.color},${plan.color}cc)` : 'transparent',
+                      color: isCurrent ? '#34a853' : plan.popular ? '#fff' : plan.color,
+                      border: isCurrent
+                        ? '1.5px solid rgba(52,168,83,.35)'
+                        : `1.5px solid ${plan.popular ? 'transparent' : plan.color + '80'}`,
                       borderRadius: 9, padding: '10px 0', fontSize: 13, fontWeight: 600,
-                      cursor: 'pointer', width: '100%', marginBottom: 18,
-                      boxShadow: plan.popular ? `0 4px 16px ${plan.color}40` : 'none',
+                      cursor: isCurrent ? 'default' : 'pointer', width: '100%', marginBottom: 18,
+                      boxShadow: (!isCurrent && plan.popular) ? `0 4px 16px ${plan.color}40` : 'none',
                       transition: 'opacity .15s',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.82' }}
+                    onMouseEnter={e => { if (!isCurrent) e.currentTarget.style.opacity = '0.82' }}
                     onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
                   >
-                    {plan.cta}
+                    {isCurrent ? '✓ Current Plan' : status === 'upgrade' ? `Upgrade to ${plan.name}` : plan.cta}
                   </button>
 
                   <div style={{ borderTop:'1px solid rgba(255,255,255,.07)', marginBottom:16 }} />

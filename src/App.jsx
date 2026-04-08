@@ -12,7 +12,8 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const sessionId = params.get('session_id')
+    const sessionId  = params.get('session_id')
+    const isUpgrade  = params.get('upgrade') === '1'
     const storedToken = localStorage.getItem('wrtc_token')
 
     // Returning from Stripe — verify payment
@@ -25,8 +26,6 @@ export default function App() {
           setView('dashboard')
         })
         .catch(() => {
-          // Verification failed (e.g. Stripe keys not set on server).
-          // Still load the user so they can access the dashboard.
           apiFetch('/auth/me', {}, storedToken)
             .then(me => {
               setToken(storedToken)
@@ -37,6 +36,22 @@ export default function App() {
               localStorage.removeItem('wrtc_token')
               setView('pricing')
             })
+        })
+      return
+    }
+
+    // Coming from meeting "Upgrade Plan" button
+    if (isUpgrade && storedToken) {
+      apiFetch('/auth/me', {}, storedToken)
+        .then(me => {
+          setToken(storedToken)
+          setUser(me)
+          window.history.replaceState({}, '', window.location.pathname)
+          setView('pricing')
+        })
+        .catch(() => {
+          localStorage.removeItem('wrtc_token')
+          setView('pricing')
         })
       return
     }
@@ -84,7 +99,7 @@ export default function App() {
 
   if (view === 'loading') return null
 
-  if (view === 'pricing') return <PricingView onSelectPlan={handleSelectPlan} />
+  if (view === 'pricing') return <PricingView onSelectPlan={handleSelectPlan} currentPlan={user?.plan ?? null} />
 
   if (view === 'auth') return <AuthView onLogin={handleLogin} selectedPlan={selectedPlan} />
 
