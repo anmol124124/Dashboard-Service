@@ -33,6 +33,32 @@ function fmtShortDate(iso) {
   })
 }
 
+// ── CSV Export ────────────────────────────────────────────────────────────────
+
+function exportCSV(meetings, projectName) {
+  const rows = [
+    ['Meeting Title', 'Room', 'Date', 'Started At', 'Ended At', 'Duration', 'Participants', 'Status'],
+    ...meetings.map(m => [
+      m.title || m.room_name,
+      m.room_name,
+      new Date(m.created_at).toLocaleDateString(),
+      m.started_at ? new Date(m.started_at).toLocaleString() : new Date(m.created_at).toLocaleString(),
+      m.ended_at ? new Date(m.ended_at).toLocaleString() : '',
+      m.duration_seconds != null ? fmtDuration(m.duration_seconds) : '',
+      m.participant_count || 0,
+      m.ended_at ? 'Ended' : 'Live',
+    ])
+  ]
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const blob = new Blob([csv], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${projectName.replace(/\s+/g, '_')}_meetings_${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub, accentBg, accentText }) {
@@ -55,11 +81,13 @@ function StatCard({ label, value, sub, accentBg, accentText }) {
 // ── Full-screen Meeting Detail ────────────────────────────────────────────────
 
 function MeetingDetail({ meeting, projectId, token, onBack }) {
-  const [detail, setDetail] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [detail, setDetail]           = useState(null)
+  const [loading, setLoading]         = useState(true)
+  const [participantSearch, setParticipantSearch] = useState('')
 
   useEffect(() => {
     setLoading(true)
+    setParticipantSearch('')
     apiFetch(`/projects/${projectId}/meetings/${meeting.id}`, {}, token)
       .then(setDetail)
       .catch(() => setDetail(null))
@@ -67,7 +95,16 @@ function MeetingDetail({ meeting, projectId, token, onBack }) {
   }, [meeting.id, projectId, token])
 
   const live = !meeting.ended_at
-  const participants = detail?.participants || []
+  const allParticipants = detail?.participants || []
+
+  const participants = useMemo(() => {
+    if (!participantSearch.trim()) return allParticipants
+    const q = participantSearch.trim().toLowerCase()
+    return allParticipants.filter(p =>
+      (p.display_name || '').toLowerCase().includes(q) ||
+      (p.role || '').toLowerCase().includes(q)
+    )
+  }, [allParticipants, participantSearch])
 
   return (
     <div className="page-content">
@@ -118,7 +155,7 @@ function MeetingDetail({ meeting, projectId, token, onBack }) {
         />
         <StatCard
           label="Total Participants"
-          value={participants.length || meeting.participant_count || 0}
+          value={allParticipants.length || meeting.participant_count || 0}
           sub="joined"
         />
         <StatCard
@@ -137,20 +174,41 @@ function MeetingDetail({ meeting, projectId, token, onBack }) {
 
       {/* Participants table */}
       <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
+        {/* Table header bar with search */}
         <div style={{
-          padding: '14px 22px',
+          padding: '12px 22px',
           borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          background: '#f8fafc',
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: '#f8fafc', flexWrap: 'wrap',
         }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: '#1a202c' }}>Participants</span>
           <span style={{ fontSize: 12, color: '#64748b' }}>
-            {loading ? '…' : `${participants.length} total`}
+            {loading ? '…' : `${allParticipants.length} total`}
           </span>
+          {/* Participant search */}
+          {!loading && allParticipants.length > 0 && (
+            <div style={{ position: 'relative', marginLeft: 'auto' }}>
+              <svg style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}
+                width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search participants…"
+                value={participantSearch}
+                onChange={e => setParticipantSearch(e.target.value)}
+                style={{
+                  background: '#fff', border: '1px solid #e2e8f0',
+                  borderRadius: 7, padding: '6px 10px 6px 28px',
+                  fontSize: 12, color: '#1a202c', outline: 'none', width: 200,
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Table header */}
-        {!loading && participants.length > 0 && (
+        {/* Column headers */}
+        {!loading && allParticipants.length > 0 && (
           <div style={{
             display: 'grid', gridTemplateColumns: '2fr 80px 160px 160px 120px',
             padding: '9px 22px', borderBottom: '1px solid var(--border)',
@@ -170,9 +228,15 @@ function MeetingDetail({ meeting, projectId, token, onBack }) {
           <div style={{ padding: '32px 22px', color: '#64748b', fontSize: 14 }}>Loading…</div>
         )}
 
-        {!loading && participants.length === 0 && (
+        {!loading && allParticipants.length === 0 && (
           <div style={{ padding: '40px 22px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
             No participant data recorded for this meeting.
+          </div>
+        )}
+
+        {!loading && allParticipants.length > 0 && participants.length === 0 && (
+          <div style={{ padding: '32px 22px', textAlign: 'center', color: '#94a3b8', fontSize: 14 }}>
+            No participants match "{participantSearch}".
           </div>
         )}
 
@@ -270,18 +334,22 @@ function meetingStatus(m) {
 export default function SummaryPage({ project, token }) {
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading]     = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch]       = useState('')
   const [sortBy, setSortBy]       = useState('date_desc')
   const [selected, setSelected]   = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
 
-  useEffect(() => {
-    setAnalytics(null); setLoading(true); setSelected(null)
+  const loadAnalytics = (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true)
+    else { setAnalytics(null); setLoading(true); setSelected(null) }
     apiFetch(`/projects/${project.id}/analytics`, {}, token)
       .then(setAnalytics)
       .catch(() => setAnalytics({ total: 0, meetings: [] }))
-      .finally(() => setLoading(false))
-  }, [project.id, token])
+      .finally(() => { setLoading(false); setRefreshing(false) })
+  }
+
+  useEffect(() => { loadAnalytics() }, [project.id, token])
 
   // All hooks must be called unconditionally before any early return
   const allMeetings = analytics?.meetings || []
@@ -344,10 +412,37 @@ export default function SummaryPage({ project, token }) {
 
   return (
     <div className="page-content">
-      <div className="page-heading">
-        <h1>Summary</h1>
-        <p>Overview of all meetings and activity for {project.name}.</p>
+      {/* Page heading with refresh button */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div className="page-heading" style={{ margin: 0 }}>
+          <h1 style={{ margin: 0 }}>Summary</h1>
+          <p style={{ margin: '4px 0 0' }}>Overview of all meetings and activity for {project.name}.</p>
+        </div>
+        <button
+          onClick={() => loadAnalytics(true)}
+          disabled={refreshing || loading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 8, padding: '7px 14px', cursor: refreshing ? 'default' : 'pointer',
+            fontSize: 13, fontWeight: 600, color: 'var(--text)',
+            boxShadow: 'var(--shadow-sm)', opacity: refreshing ? 0.6 : 1,
+            marginTop: 4,
+          }}
+        >
+          <svg
+            width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            style={{ animation: refreshing ? 'spin 0.8s linear infinite' : 'none' }}
+          >
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </button>
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {loading && <p style={{ color: 'var(--muted)' }}>Loading…</p>}
 
@@ -372,27 +467,20 @@ export default function SummaryPage({ project, token }) {
           {/* ── Scheduled Meetings Section ──────────────────────────────── */}
           {filteredScheduled.length > 0 && (
             <div style={{ marginBottom: 28 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10,
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
                   <rect x="3" y="4" width="18" height="18" rx="2"/>
                   <line x1="16" y1="2" x2="16" y2="6"/>
                   <line x1="8" y1="2" x2="8" y2="6"/>
                   <line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>
-                  Scheduled Meetings
-                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>Scheduled Meetings</span>
                 <span style={{
                   fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                   background: '#eff6ff', color: '#3b82f6',
-                }}>
-                  {filteredScheduled.length}
-                </span>
+                }}>{filteredScheduled.length}</span>
               </div>
               <div className="section-card" style={{ padding: 0, overflow: 'hidden' }}>
-                {/* Header */}
                 <div style={{
                   display: 'grid', gridTemplateColumns: '1fr 160px 160px',
                   padding: '9px 20px', borderBottom: '1px solid var(--border)',
@@ -404,29 +492,21 @@ export default function SummaryPage({ project, token }) {
                   <span>Scheduled For</span>
                 </div>
                 {filteredScheduled.map((m, i) => (
-                  <div
-                    key={m.id}
-                    style={{
-                      display: 'grid', gridTemplateColumns: '1fr 160px 160px',
-                      padding: '13px 20px', alignItems: 'center',
-                      borderBottom: i < filteredScheduled.length - 1 ? '1px solid #f1f5f9' : 'none',
-                      background: '#fff',
-                    }}
-                  >
+                  <div key={m.id} style={{
+                    display: 'grid', gridTemplateColumns: '1fr 160px 160px',
+                    padding: '13px 20px', alignItems: 'center',
+                    borderBottom: i < filteredScheduled.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    background: '#fff',
+                  }}>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 14, fontWeight: 600, color: '#1a202c',
-                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                      }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: '#1a202c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {m.title || m.room_name}
                       </div>
                       <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{m.room_name}</div>
                     </div>
                     <div style={{ fontSize: 12, color: '#64748b' }}>{fmtShortDate(m.created_at)}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#3b82f6' }}>
-                        {fmtDate(m.scheduled_at)}
-                      </span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#3b82f6' }}>{fmtDate(m.scheduled_at)}</span>
                       <span style={{
                         fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
                         background: '#eff6ff', color: '#3b82f6',
@@ -439,9 +519,9 @@ export default function SummaryPage({ project, token }) {
             </div>
           )}
 
-          {/* ── Started / Ended Meetings ────────────────────────────────── */}
-          {/* Toolbar */}
+          {/* ── Toolbar ─────────────────────────────────────────────────── */}
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+            {/* Search */}
             <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
               <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', pointerEvents: 'none' }}
                 width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -459,6 +539,7 @@ export default function SummaryPage({ project, token }) {
               />
             </div>
 
+            {/* Status filter */}
             <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               {[['all','All'],['live','Live'],['ended','Ended']].map(([val, label]) => (
                 <button key={val} onClick={() => setFilterStatus(val)} style={{
@@ -470,6 +551,7 @@ export default function SummaryPage({ project, token }) {
               ))}
             </div>
 
+            {/* Sort */}
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
               style={{
                 background: 'var(--surface)', border: '1px solid var(--border)',
@@ -482,6 +564,26 @@ export default function SummaryPage({ project, token }) {
               <option value="duration">Longest first</option>
               <option value="participants">Most participants</option>
             </select>
+
+            {/* Export CSV */}
+            {startedMeetings.length > 0 && (
+              <button
+                onClick={() => exportCSV(filtered.length > 0 ? filtered : startedMeetings, project.name)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'var(--surface)', border: '1px solid var(--border)',
+                  borderRadius: 8, padding: '7px 13px', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 600, color: 'var(--text)',
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export CSV
+              </button>
+            )}
           </div>
 
           {/* Empty state */}
