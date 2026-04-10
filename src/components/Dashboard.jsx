@@ -3,7 +3,7 @@ import { apiFetch } from '../api.js'
 import CreateModal from './CreateModal.jsx'
 import OverviewPage from './OverviewPage.jsx'
 import AnalyticsPage from './AnalyticsPage.jsx'
-import ActivityPage from './ActivityPage.jsx'
+import SummaryPage from './SummaryPage.jsx'
 import RecordingsPage from './RecordingsPage.jsx'
 import ApiKeysPage from './ApiKeysPage.jsx'
 import WebhooksPage from './WebhooksPage.jsx'
@@ -20,7 +20,7 @@ import ProvisioningPage from './ProvisioningPage.jsx'
 const NAV_SECTIONS = [
   [
     { id: 'overview',   label: 'Overview',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
-    { id: 'activity',   label: 'Activity',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+    { id: 'activity',   label: 'Summary',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="3" y="12" width="7" height="9" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/></svg> },
     { id: 'api-keys',   label: 'API Keys',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg> },
     { id: 'webhooks',   label: 'Webhooks',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>, hidden: true },
     { id: 'analytics',  label: 'Analytics',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
@@ -202,7 +202,7 @@ export default function Dashboard({ user, token, onLogout, onPlanUpgrade, initia
         ) : (
           <>
             {activePage === 'overview'         && <OverviewPage        {...pageProps} />}
-            {activePage === 'activity'         && <ActivityPage        {...pageProps} />}
+            {activePage === 'activity'         && <SummaryPage         {...pageProps} />}
             {activePage === 'api-keys'         && <ApiKeysPage         {...pageProps} />}
             {activePage === 'webhooks'         && <WebhooksPage        {...pageProps} />}
             {activePage === 'analytics'        && <AnalyticsPage       {...pageProps} />}
