@@ -39,10 +39,10 @@ const NAV_SECTIONS = [
   ],
 ]
 
-export default function Dashboard({ user, token, onLogout, onPlanUpgrade }) {
+export default function Dashboard({ user, token, onLogout, onPlanUpgrade, initialPage }) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
-  const [activePage, setActivePage] = useState(() => sessionStorage.getItem('dash_page') || 'overview')
+  const [activePage, setActivePage] = useState(() => initialPage || sessionStorage.getItem('dash_page') || 'overview')
   const [createOpen, setCreateOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [toast, setToast] = useState({ msg: '', show: false })

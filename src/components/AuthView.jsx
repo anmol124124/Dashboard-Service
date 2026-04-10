@@ -57,7 +57,7 @@ export default function AuthView({ onLogin, selectedPlan }) {
       }
 
       const me = await apiFetch('/auth/me', {}, token)
-      onLogin(token, me.email, me.plan)
+      onLogin(token, me.email, me.plan, true)
     } catch (e) {
       setError(e.message)
     } finally {
