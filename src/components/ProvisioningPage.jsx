@@ -16,6 +16,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
   const [color,   setColor]   = useState(DEFAULT_COLOR)
   const [label,   setLabel]   = useState(DEFAULT_LABEL)
   const [welcome, setWelcome] = useState(DEFAULT_WELCOME)
+  const [theme,   setTheme]   = useState(null)   // null | 'dark' | 'light'
   const [saving,  setSaving]  = useState(false)
   const [dirty,   setDirty]   = useState(false)
 
@@ -27,6 +28,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
         if (d.primary_color)   setColor(d.primary_color)
         if (d.button_label)    setLabel(d.button_label)
         if (d.welcome_message) setWelcome(d.welcome_message)
+        if (d.theme)           setTheme(d.theme)
       })
       .catch(() => {})
   }, [project.id, token])
@@ -80,7 +82,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
     try {
       await apiFetch(`/projects/${project.id}/branding`, {
         method: 'PUT',
-        body: JSON.stringify({ primary_color: color, button_label: label, welcome_message: welcome }),
+        body: JSON.stringify({ primary_color: color, button_label: label, welcome_message: welcome, theme }),
       }, token)
       setDirty(false)
       onToast('Branding saved!')
@@ -92,7 +94,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
   }
 
   function resetDefaults() {
-    setColor(DEFAULT_COLOR); setLabel(DEFAULT_LABEL); setWelcome(DEFAULT_WELCOME)
+    setColor(DEFAULT_COLOR); setLabel(DEFAULT_LABEL); setWelcome(DEFAULT_WELCOME); setTheme(null)
     setDirty(true)
   }
 
@@ -240,6 +242,42 @@ export default function ProvisioningPage({ project, token, onToast }) {
             </div>
           </div>
 
+          {/* Meeting Theme */}
+          <div className="section-card">
+            <div className="section-card-title">Meeting Theme</div>
+            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16, lineHeight: 1.6 }}>
+              Controls the appearance of the meeting room for all participants.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[
+                { value: 'dark',  label: 'Dark',  icon: '🌙' },
+                { value: 'light', label: 'Light', icon: '☀️'  },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => { setTheme(theme === opt.value ? null : opt.value); markDirty() }}
+                  style={{
+                    flex: 1, padding: '10px 8px', borderRadius: 10, cursor: 'pointer',
+                    border: theme === opt.value ? '2px solid var(--primary)' : '2px solid var(--border)',
+                    background: theme === opt.value ? 'rgba(108,99,255,.1)' : 'var(--surface2)',
+                    color: theme === opt.value ? 'var(--primary)' : 'var(--muted)',
+                    fontWeight: theme === opt.value ? 700 : 500,
+                    fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                    transition: 'all .15s',
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{opt.icon}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {theme && (
+              <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+                Click the selected option again to revert to default.
+              </p>
+            )}
+          </div>
+
           {/* Save / Reset */}
           <div style={{ display: 'flex', gap: 10 }}>
             <button
@@ -282,13 +320,13 @@ export default function ProvisioningPage({ project, token, onToast }) {
             </div>
 
             {/* Simulated embed widget */}
-            <div style={{ background: '#0f1117', padding: 0 }}>
+            <div style={{ background: theme === 'light' ? '#f1f3f4' : '#0f1117', padding: 0 }}>
 
               {/* Top bar */}
               <div style={{
-                background: '#1a1d28', padding: '10px 14px',
+                background: theme === 'light' ? '#ffffff' : '#1a1d28', padding: '10px 14px',
                 display: 'flex', alignItems: 'center', gap: 10,
-                borderBottom: '1px solid rgba(255,255,255,.08)',
+                borderBottom: theme === 'light' ? '1px solid rgba(0,0,0,.08)' : '1px solid rgba(255,255,255,.08)',
               }}>
                 {logoUrl ? (
                   <img src={logoUrl} alt="Logo" style={{ height: 28, maxWidth: 100, objectFit: 'contain', borderRadius: 3 }} />
@@ -301,7 +339,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
                     {project.name[0].toUpperCase()}
                   </div>
                 )}
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{project.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: theme === 'light' ? '#202124' : '#fff' }}>{project.name}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
@@ -328,7 +366,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
 
                 {/* Welcome message */}
                 <p style={{
-                  fontSize: 13, color: 'rgba(255,255,255,.65)', lineHeight: 1.6,
+                  fontSize: 13, color: theme === 'light' ? 'rgba(0,0,0,.6)' : 'rgba(255,255,255,.65)', lineHeight: 1.6,
                   margin: 0, maxWidth: 220,
                 }}>
                   {welcome || DEFAULT_WELCOME}
@@ -336,10 +374,10 @@ export default function ProvisioningPage({ project, token, onToast }) {
 
                 {/* Name input mockup */}
                 <div style={{
-                  width: '100%', background: '#1e2230',
-                  border: '1px solid rgba(255,255,255,.12)',
+                  width: '100%', background: theme === 'light' ? '#f1f3f4' : '#1e2230',
+                  border: theme === 'light' ? '1px solid rgba(0,0,0,.12)' : '1px solid rgba(255,255,255,.12)',
                   borderRadius: 8, padding: '9px 12px',
-                  fontSize: 13, color: 'rgba(255,255,255,.3)',
+                  fontSize: 13, color: theme === 'light' ? 'rgba(0,0,0,.35)' : 'rgba(255,255,255,.3)',
                   textAlign: 'left',
                 }}>
                   Your name…
@@ -357,7 +395,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
                 </button>
 
                 {/* Powered by */}
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,.2)', marginTop: -4 }}>
+                <div style={{ fontSize: 10, color: theme === 'light' ? 'rgba(0,0,0,.25)' : 'rgba(255,255,255,.2)', marginTop: -4 }}>
                   Powered by RoomLy
                 </div>
               </div>
