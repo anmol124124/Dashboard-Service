@@ -51,7 +51,7 @@ export default function AuthView({ onLogin, selectedPlan }) {
       const isFree = !selectedPlan || selectedPlan === 'starter'
       if (!isFree) {
         const { checkout_url } = await createCheckoutSession(selectedPlan, token)
-        localStorage.setItem('wrtc_token', token)
+        // Cookie was already set by the server on login — no localStorage needed.
         window.location.href = checkout_url
         return
       }

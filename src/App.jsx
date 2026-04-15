@@ -5,7 +5,11 @@ import Dashboard from './components/Dashboard.jsx'
 import PricingView from './components/PricingView.jsx'
 
 export default function App() {
-  const [token, setToken] = useState(() => localStorage.getItem('wrtc_token') || '')
+  // Token lives in React state only (never localStorage).
+  // The httpOnly cookie is the durable session — apiFetch sends it automatically
+  // via credentials:'include'. The in-memory token is kept for endpoints that
+  // still accept Bearer (SDK embed flows, Stripe callbacks within the same session).
+  const [token, setToken] = useState('')
   const [user, setUser] = useState(null)
   const [view, setView] = useState('loading') // 'loading'|'pricing'|'auth'|'dashboard'
   const [selectedPlan, setSelectedPlan] = useState(null)
@@ -14,79 +18,50 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const sessionId  = params.get('session_id')
-    const isUpgrade  = params.get('upgrade') === '1'
-    const isMyPlan   = params.get('myplan') === '1'
-    const storedToken = localStorage.getItem('wrtc_token')
+    const sessionId = params.get('session_id')
+    const isUpgrade = params.get('upgrade') === '1'
+    const isMyPlan  = params.get('myplan') === '1'
 
-    // Returning from Stripe — verify payment
-    if (sessionId && storedToken) {
-      window.history.replaceState({}, '', window.location.pathname)
-      verifySession(sessionId, storedToken)
-        .then(({ plan, email }) => {
-          setToken(storedToken)
-          setUser({ email, plan })
-          setView('dashboard')
-        })
-        .catch(() => {
-          apiFetch('/auth/me', {}, storedToken)
-            .then(me => {
-              setToken(storedToken)
-              setUser(me)
-              setView('dashboard')
-            })
-            .catch(() => {
-              localStorage.removeItem('wrtc_token')
-              setView('pricing')
-            })
-        })
-      return
-    }
+    // Always restore session via httpOnly cookie (no localStorage read needed).
+    apiFetch('/auth/me')
+      .then(me => {
+        // ── Authenticated ────────────────────────────────────────────────
 
-    // Coming from dashboard-service meeting "Upgrade Plan" → go to My Plan section
-    if (isMyPlan) {
-      window.history.replaceState({}, '', window.location.pathname)
-      if (storedToken) {
-        apiFetch('/auth/me', {}, storedToken)
-          .then(me => { setToken(storedToken); setUser(me); setInitialPage('my-plan'); setView('dashboard') })
-          .catch(() => { localStorage.removeItem('wrtc_token'); setView('auth') })
-      } else {
+        // Returning from Stripe — verify payment
+        if (sessionId) {
+          window.history.replaceState({}, '', window.location.pathname)
+          verifySession(sessionId, token)
+            .then(({ plan, email }) => { setUser({ email, plan }); setView('dashboard') })
+            .catch(() => { setUser(me); setView('dashboard') })
+          return
+        }
+
+        // Coming from meeting "Upgrade Plan" → open My Plan tab
+        if (isMyPlan) {
+          window.history.replaceState({}, '', window.location.pathname)
+          setUser(me); setInitialPage('my-plan'); setView('dashboard')
+          return
+        }
+
+        setUser(me)
+        setView('dashboard')
+      })
+      .catch(() => {
+        // ── Not authenticated ────────────────────────────────────────────
+        if (sessionId) window.history.replaceState({}, '', window.location.pathname)
+        if (isUpgrade) {
+          window.history.replaceState({}, '', window.location.pathname)
+          setFromUpgrade(true)
+          setView('auth')
+          return
+        }
+        if (isMyPlan) {
+          window.history.replaceState({}, '', window.location.pathname)
+          setView('auth')
+          return
+        }
         setView('auth')
-      }
-      return
-    }
-
-    // Coming from public-meet "Upgrade Plan" button → auth → pricing
-    if (isUpgrade) {
-      window.history.replaceState({}, '', window.location.pathname)
-      if (storedToken) {
-        // Already logged in = already purchased → go to dashboard
-        apiFetch('/auth/me', {}, storedToken)
-          .then(me => { setToken(storedToken); setUser(me); setView('dashboard') })
-          .catch(() => { localStorage.removeItem('wrtc_token'); setFromUpgrade(true); setView('auth') })
-      } else {
-        // Not logged in → show auth; signup will land on pricing
-        setFromUpgrade(true)
-        setView('auth')
-      }
-      return
-    }
-
-    // Restore existing session
-    if (storedToken) {
-      apiFetch('/auth/me', {}, storedToken)
-        .then(me => {
-          setToken(storedToken)
-          setUser(me)
-          setView('dashboard')
-        })
-        .catch(() => {
-          localStorage.removeItem('wrtc_token')
-          setView('pricing')
-        })
-    } else {
-      setView('auth')
-    }
+      })
   }, [])
 
   function handleSelectPlan(plan) {
@@ -102,7 +77,7 @@ export default function App() {
   }
 
   function handleLogin(accessToken, email, plan, isSignup = false) {
-    localStorage.setItem('wrtc_token', accessToken)
+    // Token stays in memory only — the httpOnly cookie was set by the server on login.
     setToken(accessToken)
     setUser({ email, plan })
     setFromUpgrade(false)
@@ -115,7 +90,8 @@ export default function App() {
   }
 
   function handleLogout() {
-    localStorage.removeItem('wrtc_token')
+    // Tell the server to clear the httpOnly cookie, then wipe local state.
+    apiFetch('/auth/logout', { method: 'POST' }).catch(() => {})
     setToken('')
     setUser(null)
     setSelectedPlan(null)

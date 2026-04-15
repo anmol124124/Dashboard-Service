@@ -10,6 +10,7 @@ export const API_BASE = `${BACKEND_URL}/api/v1`
 export async function apiFetch(path, opts = {}, token = '') {
   const res = await fetch(API_BASE + path, {
     ...opts,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),

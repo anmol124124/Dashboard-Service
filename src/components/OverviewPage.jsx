@@ -1,67 +1,5 @@
 import { useState, useEffect } from 'react'
 import { apiFetch } from '../api.js'
-import ScheduleProjectMeetingModal from './ScheduleProjectMeetingModal.jsx'
-
-/* ── Syntax highlighter ───────────────────────────────────────────────────── */
-function syntaxHighlight(code) {
-  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
-  const lines = code.split('\n')
-  return lines.map(line => {
-    let result = ''
-    let i = 0
-
-    while (i < line.length) {
-      // JS line comment
-      if (line[i] === '/' && line[i + 1] === '/') {
-        result += `<span class="sh-comment">${esc(line.slice(i))}</span>`
-        i = line.length
-      }
-      // HTML tag
-      else if (line[i] === '<') {
-        const end = line.indexOf('>', i)
-        if (end !== -1) {
-          const raw = line.slice(i, end + 1)
-          // Inside tag: highlight attr values separately
-          let inner = ''
-          let j = 0
-          while (j < raw.length) {
-            if (raw[j] === '"') {
-              let k = j + 1
-              while (k < raw.length && raw[k] !== '"') k++
-              inner += `<span class="sh-string">${esc(raw.slice(j, k + 1))}</span>`
-              j = k + 1
-            } else {
-              inner += esc(raw[j]); j++
-            }
-          }
-          result += `<span class="sh-tag">${inner}</span>`
-          i = end + 1
-        } else {
-          result += esc(line[i]); i++
-        }
-      }
-      // Single or double quoted string
-      else if (line[i] === '"' || line[i] === "'") {
-        const q = line[i]; let j = i + 1
-        while (j < line.length && line[j] !== q) j++
-        result += `<span class="sh-string">${esc(line.slice(i, j + 1))}</span>`
-        i = j + 1
-      }
-      // JS keywords
-      else {
-        const kw = line.slice(i).match(/^(const|let|var|function|new|return|window|document|onload)\b/)
-        if (kw) {
-          result += `<span class="sh-keyword">${esc(kw[0])}</span>`
-          i += kw[0].length
-        } else {
-          result += esc(line[i]); i++
-        }
-      }
-    }
-    return result
-  }).join('\n')
-}
 
 /* ── Component ────────────────────────────────────────────────────────────── */
 export default function OverviewPage({ project, token, onToast, user }) {
@@ -102,21 +40,9 @@ export default function OverviewPage({ project, token, onToast, user }) {
 
   return (
     <div className="page-content">
-      <div className="page-heading" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 className="glitch-title" data-text={project.name}>{project.name}</h1>
-          <p>Embed code and quick stats for your project.</p>
-        </div>
-        <button
-          className="btn btn-ghost btn-sm"
-          onClick={() => setScheduleOpen(true)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6 }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-          </svg>
-          Schedule Meeting
-        </button>
+      <div className="page-heading">
+        <h1 className="glitch-title" data-text={project.name}>{project.name}</h1>
+        <p>Embed code and quick stats for your project.</p>
       </div>
 
       {/* Stats */}
@@ -172,11 +98,8 @@ export default function OverviewPage({ project, token, onToast, user }) {
               </div>
             </div>
 
-            {/* Code with syntax highlighting */}
-            <pre
-              className="sh-pre"
-              dangerouslySetInnerHTML={{ __html: syntaxHighlight(embedData.html) }}
-            />
+            {/* Plain text — no dangerouslySetInnerHTML to avoid XSS */}
+            <pre className="sh-pre">{embedData.html}</pre>
           </div>
         ) : (
           <div style={{ height: 200, background: '#1e2a3a', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

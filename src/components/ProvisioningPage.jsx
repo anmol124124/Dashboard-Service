@@ -47,6 +47,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
       form.append('file', file)
       const res = await fetch(`${API_BASE}/projects/${project.id}/logo`, {
         method: 'POST',
+        credentials: 'include',
         headers: { Authorization: `Bearer ${token}` },
         body: form,
       })
@@ -65,7 +66,7 @@ export default function ProvisioningPage({ project, token, onToast }) {
     setLogoLoading(true)
     try {
       await fetch(`${API_BASE}/projects/${project.id}/logo`, {
-        method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+        method: 'DELETE', credentials: 'include', headers: { Authorization: `Bearer ${token}` },
       })
       setLogoUrl(null)
       onToast('Logo removed.')
