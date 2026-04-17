@@ -15,6 +15,7 @@ import StartGuidePage from './StartGuidePage.jsx'
 import FAQPage from './FAQPage.jsx'
 import ContactSupportPage from './ContactSupportPage.jsx'
 import ProvisioningPage from './ProvisioningPage.jsx'
+import AddOnsPage from './AddOnsPage.jsx'
 
 // null = separator line
 const NAV_SECTIONS = [
@@ -25,6 +26,7 @@ const NAV_SECTIONS = [
     { id: 'webhooks',   label: 'Webhooks',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>, hidden: true },
     { id: 'analytics',  label: 'Analytics',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>, hidden: true },
     { id: 'releases',   label: 'Releases',   icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> },
+    { id: 'add-ons',    label: 'Add-Ons',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
     { id: 'recordings',    label: 'Recordings',    icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/></svg> },
     { id: 'provisioning',  label: 'Provisioning',  icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07M8.46 8.46a5 5 0 0 0 0 7.07"/></svg> },
   ],
@@ -83,7 +85,7 @@ export default function Dashboard({ user, token, onLogout, onPlanUpgrade, initia
 
   function selectProject(p) { setSelectedProject(p); setDropdownOpen(false); navTo('overview') }
 
-  const projectPages = ['overview','activity','api-keys','webhooks','analytics','releases','recordings','provisioning']
+  const projectPages = ['overview','activity','api-keys','webhooks','analytics','releases','add-ons','recordings','provisioning']
   const needsProject = projectPages.includes(activePage)
   const pageProps = { project: selectedProject, token, onToast: showToast, user }
 
@@ -207,6 +209,7 @@ export default function Dashboard({ user, token, onLogout, onPlanUpgrade, initia
             {activePage === 'webhooks'         && <WebhooksPage        {...pageProps} />}
             {activePage === 'analytics'        && <AnalyticsPage       {...pageProps} />}
             {activePage === 'releases'         && <ReleasesPage />}
+            {activePage === 'add-ons'          && <AddOnsPage          {...pageProps} />}
             {activePage === 'recordings'       && <RecordingsPage      {...pageProps} />}
             {activePage === 'provisioning'     && <ProvisioningPage    {...pageProps} />}
             {activePage === 'team'             && <TeamPage            {...pageProps} />}
