@@ -2,44 +2,84 @@ import { useState } from 'react'
 
 const FAQS = [
   {
-    q: 'What is a MAU (Meeting Active User)?',
-    a: 'A Meeting Active User is a unique participant who joins at least one meeting in a given month. Each unique person is counted once per month regardless of how many meetings they join. Your plan limit determines how many unique participants can join your meetings each month.',
-  },
-  {
+    category: 'Getting Started',
     q: 'How do I embed RoomLy in my website?',
-    a: 'Go to your project\'s Overview page, copy the Host Embed Code, and paste it into your website\'s HTML. The snippet is self-contained and works without any additional setup.',
+    a: 'Go to your project\'s Overview page, copy the Host Embed Code, and paste it anywhere in your website\'s HTML. The snippet is fully self-contained — no additional setup or dependencies required.',
   },
   {
+    category: 'Getting Started',
     q: 'What is the difference between the Host and Guest embed?',
-    a: 'The Host embed shows full controls — create meetings, see previous meetings, start/stop recording. The Guest embed is a simple join page for participants without any host controls.',
+    a: 'The Host embed gives full controls — create and manage meetings, start/stop recording, manage participants. The Guest embed is a simple join page for participants with no host-level controls. Share the Guest embed link with your audience.',
   },
   {
-    q: 'How do recordings work?',
-    a: 'When you click the Record button during a meeting, RoomLy captures your screen and audio. When you stop recording, the file is automatically uploaded to your dashboard. Go to the Recordings page to download it.',
+    category: 'Getting Started',
+    q: 'How do I restrict which websites can load my embed?',
+    a: 'Go to your project\'s Overview page and add your website\'s domain to the allowlist. Only pages on approved domains can load the embed. You can add or remove domains at any time.',
   },
   {
-    q: 'How do I restrict who can embed my meeting room?',
-    a: 'When creating a project, add your website\'s domain to the allowlist. Only pages on that domain will be able to load the embed. You can add or remove domains from the Overview page.',
+    category: 'Plans & Billing',
+    q: 'What are the available plans?',
+    a: 'RoomLy offers four plans: Starter (Free) with 40-minute meetings and 5 MAU/month; Basic ($9.99/mo) with 24-hour meetings; Pro ($29.99/mo) with unlimited duration, 300 participants, custom branding and analytics; and Enterprise (Custom pricing) for large-scale deployments with unlimited everything, white-label, and dedicated support.',
   },
   {
-    q: 'Is my data secure?',
-    a: 'Yes. All meetings use WebRTC encryption (DTLS-SRTP) end-to-end. Your embed token (JWT) should be kept secret — treat it like a password and never expose it in public client-side code without proper security measures.',
+    category: 'Plans & Billing',
+    q: 'How many projects can I create?',
+    a: 'The Starter, Basic, and Pro plans each include 1 project. The Enterprise plan supports unlimited projects. Switch between projects using the project switcher in the sidebar.',
   },
   {
-    q: 'Can I have multiple projects?',
-    a: 'Yes, you can create unlimited projects on the Free plan. Each project has its own room, embed code, and token. Switch between projects using the project switcher in the sidebar.',
+    category: 'Plans & Billing',
+    q: 'What is a MAU (Monthly Active User)?',
+    a: 'A Monthly Active User is a unique participant who joins at least one meeting in a given calendar month. Each person is counted once per month regardless of how many meetings they attend. Starter and Basic plans allow 5 MAU/month; Pro allows 15 MAU/month; Enterprise is unlimited.',
   },
   {
-    q: 'What browsers are supported?',
-    a: 'RoomLy works in all modern browsers: Chrome, Firefox, Edge, and Safari. Chrome and Edge offer the best recording support. Screen recording requires a browser that supports the MediaRecorder API.',
-  },
-  {
-    q: 'How do I see who attended a meeting?',
-    a: 'Go to Analytics, click on any meeting in the list to see the detail view — it shows every participant\'s name, role, join time, and leave time.',
-  },
-  {
+    category: 'Plans & Billing',
     q: 'What happens when I reach my MAU limit?',
-    a: 'Once the monthly limit of unique participants is reached, new participants will be blocked from joining meetings until the month resets or you upgrade your plan.',
+    a: 'Once your monthly MAU limit is reached, new participants will be blocked from joining meetings for the rest of that month. Existing participants in ongoing meetings are not affected. Upgrade your plan to increase the limit immediately.',
+  },
+  {
+    category: 'Plans & Billing',
+    q: 'Are there meeting duration limits?',
+    a: 'Yes. The Starter (free) plan limits meetings to 40 minutes. The Basic plan allows up to 24-hour meetings. The Pro and Enterprise plans have no meeting duration limit.',
+  },
+  {
+    category: 'Recordings',
+    q: 'How do I enable screen recording for my project?',
+    a: 'Go to the Add-Ons page in your dashboard and toggle on "Screen Recording" for your project. Once enabled, the host will see a Record button in the meeting toolbar. Note: recording also requires a paid plan (Basic or above).',
+  },
+  {
+    category: 'Recordings',
+    q: 'How do recordings work?',
+    a: 'When the host clicks the Record button, RoomLy captures the screen and audio locally in the browser. When recording is stopped, the file is automatically uploaded to cloud storage and saved to your project. You can find and download all recordings from the Recordings page in your dashboard.',
+  },
+  {
+    category: 'Recordings',
+    q: 'Where are recordings stored?',
+    a: 'Recordings are stored in Google Cloud Storage and are accessible via a secure signed URL. Links are valid for an extended period and are only accessible to people with the link.',
+  },
+  {
+    category: 'Meetings',
+    q: 'How many participants can join a meeting?',
+    a: 'Starter and Basic plans support up to 100 participants per meeting. The Pro plan supports up to 300 participants. The Enterprise plan supports unlimited participants.',
+  },
+  {
+    category: 'Meetings',
+    q: 'What is a Public Meeting?',
+    a: 'A Public Meeting is a one-time shareable meeting created from the Public Meet page. It generates a unique link you can share with anyone — no embed code needed. Public meetings have a 40-minute limit and support up to 100 participants.',
+  },
+  {
+    category: 'Meetings',
+    q: 'How do I see who attended a meeting?',
+    a: 'Go to the Analytics page and click on any meeting in the list. The detail view shows every participant\'s name, role (host/guest), join time, leave time, and total duration.',
+  },
+  {
+    category: 'Security',
+    q: 'Is my data secure?',
+    a: 'Yes. All meetings use WebRTC encryption (DTLS-SRTP) for media streams. Your embed token (JWT) authenticates the host — treat it like a password and never expose it in public client-side code.',
+  },
+  {
+    category: 'Security',
+    q: 'What browsers are supported?',
+    a: 'RoomLy works in all modern browsers: Chrome, Firefox, Edge, and Safari. Chrome and Edge provide the best recording support. Screen recording requires a browser that supports the MediaRecorder API (all modern browsers do).',
   },
 ]
 
@@ -79,6 +119,8 @@ function FAQItem({ faq }) {
 }
 
 export default function FAQPage() {
+  const categories = [...new Set(FAQS.map(f => f.category))]
+
   return (
     <div className="page-content">
       <div className="page-heading">
@@ -86,11 +128,25 @@ export default function FAQPage() {
         <p>Frequently asked questions about RoomLy.</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {FAQS.map((faq, i) => <FAQItem key={i} faq={faq} />)}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+        {categories.map(cat => (
+          <div key={cat}>
+            <div style={{
+              fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
+              color: 'var(--primary)', marginBottom: 10,
+            }}>
+              {cat}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {FAQS.filter(f => f.category === cat).map((faq, i) => (
+                <FAQItem key={i} faq={faq} />
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: 24, textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>
+      <div style={{ marginTop: 28, textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>
         Still have questions?{' '}
         <span style={{ color: 'var(--primary)', cursor: 'default' }}>Contact our support team →</span>
       </div>

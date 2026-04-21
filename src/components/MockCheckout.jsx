@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { activatePlan } from '../api.js'
 
 const PLAN_INFO = {
-  basic:   { name: 'Basic',   price: '$9.99',  color: '#1a73e8' },
-  pro:     { name: 'Pro',     price: '$29.99', color: '#1a73e8' },
-  premium: { name: 'Premium', price: '$99.99', color: '#1a73e8' },
+  basic: { name: 'Basic', price: '$9.99',  color: '#1a73e8' },
+  pro:   { name: 'Pro',   price: '$29.99', color: '#6c63ff' },
 }
 
 export default function MockCheckout({ plan, token, onSuccess, onCancel }) {
